@@ -1,0 +1,2 @@
+- cover with tests
+- create separate exceptions[notification etc], firebase
