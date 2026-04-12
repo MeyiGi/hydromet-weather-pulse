@@ -12,8 +12,8 @@ class StationAdmin(admin.ModelAdmin):
 
     def status_badge(self, obj):
         if obj.is_overdue():
-            return format_html('<span style="color:red">⚠ Overdue</span>')
-        return format_html('<span style="color:green">✓ OK</span>')
+            return format_html('<span style="color:red">{}</span>', '⚠ Overdue')
+        return format_html('<span style="color:green">{}</span>', '✓ OK')
     status_badge.short_description = "Status"
 
 

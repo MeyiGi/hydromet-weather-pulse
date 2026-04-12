@@ -31,13 +31,15 @@ class WindowService:
         self.close_offset = timedelta(minutes=close_offset_min)
 
     def _iter_windows(self, d: date) -> Iterator[Window]:
-        for h in self.hours:
-            base = datetime(d.year, d.month, d.day, h, tzinfo=timezone.utc)
-            yield Window(
-                hour=h,
-                opens_at=base + self.open_offset,
-                closes_at=base + self.close_offset,
-            )
+        for day_offset in [-1, 0, 1]:
+            current_day = d + timedelta(days=day_offset)
+            for h in self.hours:
+                base = datetime(current_day.year, current_day.month, current_day.day, h, tzinfo=timezone.utc)
+                yield Window(
+                    hour=h,
+                    opens_at=base + self.open_offset,
+                    closes_at=base + self.close_offset,
+                )
 
     def is_open(self, now: Optional[datetime] = None) -> bool:
         now = now or datetime.now(timezone.utc)
