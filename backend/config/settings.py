@@ -159,7 +159,12 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
 
-# Temporarily allow data submission basically all day for testing
-NOTIFICATION_HOURS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
-NOTIFICATION_OPEN_OFFSET_MIN = -30
-NOTIFICATION_CLOSE_OFFSET_MIN = 30
+# # Temporarily allow data submission basically all day for testing
+# NOTIFICATION_HOURS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+# NOTIFICATION_OPEN_OFFSET_MIN = -30
+# NOTIFICATION_CLOSE_OFFSET_MIN = 30
+
+# actual data submission hours
+NOTIFICATION_HOURS = [0, 3, 6, 9, 12, 15, 18, 21] 
+NOTIFICATION_OPEN_OFFSET_MIN = -4
+NOTIFICATION_CLOSE_OFFSET_MIN = 19
