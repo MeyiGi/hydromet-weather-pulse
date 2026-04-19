@@ -1,5 +1,6 @@
 "use client";
 import { useNotifications } from "@/hooks/useNotification";
+import { useLang } from "@/lib/i18n";
 import { Bell, Check, Info, AlertTriangle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ const color = {
 
 export function NotificationsBell() {
   const { items, markRead, unread } = useNotifications();
+  const { t } = useLang();
 
   return (
     <Popover>
@@ -41,10 +43,10 @@ export function NotificationsBell() {
 
       <PopoverContent align="end" className="w-80 rounded-2xl p-0">
         <div className="flex items-center justify-between px-4 py-3">
-          <p className="text-sm font-medium">Notifications</p>
+          <p className="text-sm font-medium">{t("notifications")}</p>
           {unread > 0 && (
             <span className="text-xs text-muted-foreground">
-              {unread} unread
+              {unread} {t("unread")}
             </span>
           )}
         </div>
@@ -53,7 +55,7 @@ export function NotificationsBell() {
         <ScrollArea className="max-h-96">
           {items.length === 0 ? (
             <p className="p-8 text-center text-sm text-muted-foreground">
-              Nothing here yet.
+              {t("nothingHereYet")}
             </p>
           ) : (
             items.map((n: Notification, i) => {

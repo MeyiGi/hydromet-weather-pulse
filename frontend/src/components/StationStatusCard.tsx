@@ -1,25 +1,27 @@
 "use client";
 import { useWindowStatus } from "@/hooks/useWindowStatus";
+import { useLang } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Radio } from "lucide-react";
-import { countdown, utcHour } from "@/lib/format";
+import { countdown, localHour, utcHour } from "@/lib/format";
 
-const WINDOW_SECONDS = 20 * 60; // окно = 20 минут
+const WINDOW_SECONDS = 20 * 60;
 
 export function WindowStatusCard() {
   const { status } = useWindowStatus();
+  const { t } = useLang();
 
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="flex items-center gap-2">
           <Radio className="h-4 w-4 text-muted-foreground" />
-          <CardTitle className="text-sm font-medium">
-            Submission window
+          <CardTitle className="text-sm font-normal text-muted-foreground">
+            {t("submissionWindow")}
           </CardTitle>
         </div>
         {status ? (
@@ -27,7 +29,7 @@ export function WindowStatusCard() {
             variant={status.is_open ? "default" : "secondary"}
             className="rounded-full font-normal"
           >
-            {status.is_open ? "open" : "closed"}
+            {status.is_open ? t("open") : t("closed")}
           </Badge>
         ) : (
           <Skeleton className="h-5 w-14 rounded-full" />
@@ -41,13 +43,14 @@ export function WindowStatusCard() {
           <>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">closes in</p>
-                <p className="text-3xl font-semibold tabular-nums">
+                <p className="text-xs text-muted-foreground">{t("closesIn")}</p>
+                <p className="text-3xl font-light tabular-nums tracking-wide">
                   {countdown(status.current.seconds_left)}
                 </p>
               </div>
               <p className="text-xs text-muted-foreground">
-                {utcHour(status.current.hour)}
+                {localHour(status.current.hour)}{" "}
+                <span className="opacity-60">({utcHour(status.current.hour)} UTC)</span>
               </p>
             </div>
             <Progress
@@ -62,22 +65,32 @@ export function WindowStatusCard() {
         {status && !status.is_open && status.next && (
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">opens in</p>
-              <p className="text-3xl font-semibold tabular-nums">
+              <p className="text-xs text-muted-foreground">{t("opensIn")}</p>
+              <p className="text-3xl font-light tabular-nums tracking-wide">
                 {countdown(status.next.opens_in_seconds)}
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              next {utcHour(status.next.hour)}
+              {t("nextWindow")} {localHour(status.next.hour)}{" "}
+              <span className="opacity-60">({utcHour(status.next.hour)} UTC)</span>
             </p>
           </div>
         )}
 
         <Separator />
 
-        {/* Все 8 окон UTC */}
         <div className="flex flex-wrap gap-1.5">
-          {[0, 3, 6, 9, 12, 15, 18, 21].map((h) => (
+          {[0, 3, 6, 9, 12, 15, 18, 21]
+            .slice()
+            .sort((a, b) => {
+              const toLocal = (utcH: number) => {
+                const d = new Date();
+                d.setUTCHours(utcH, 0, 0, 0);
+                return d.getHours() * 60 + d.getMinutes();
+              };
+              return toLocal(a) - toLocal(b);
+            })
+            .map((h) => (
             <Badge
               key={h}
               variant={
@@ -87,7 +100,7 @@ export function WindowStatusCard() {
               }
               className="rounded-full font-mono text-[11px] font-normal"
             >
-              {utcHour(h)}
+              {localHour(h)}
             </Badge>
           ))}
         </div>

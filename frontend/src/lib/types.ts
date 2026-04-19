@@ -3,7 +3,18 @@ export interface Station {
   name: string;
   location: string;
   last_seen: string | null;
-  is_overdue: string;
+  is_overdue: boolean;
+  is_active: boolean;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface PaginatedStations {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  results: Station[];
 }
 
 export interface WindowStatus {

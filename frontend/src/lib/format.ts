@@ -17,4 +17,10 @@ export const relativeTime = (iso: string | null) => {
   return `${Math.floor(s / 86400)}d ago`;
 };
 
-export const utcHour = (h: number) => `${String(h).padStart(2, "0")}:00 UTC`;
+export const utcHour = (h: number) => `${String(h).padStart(2, "0")}:00`;
+
+export const localHour = (utcH: number): string => {
+  const d = new Date();
+  d.setUTCHours(utcH, 0, 0, 0);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+};

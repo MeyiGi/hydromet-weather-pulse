@@ -4,7 +4,6 @@ import { api } from "@/lib/api";
 import { Station } from "@/lib/types";
 import { useEffect, useState } from "react";
 
-// returns list of stations and update every 15 secodns
 export function useStations() {
   const [stations, setStations] = useState<Station[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -13,9 +12,9 @@ export function useStations() {
     let active = true;
     const load = async () => {
       try {
-        const data = await api.stations();
+        const data = await api.stations({ page_size: 100 });
         if (active) {
-          setStations(data);
+          setStations(data.results);
           setError(null);
         }
       } catch (e) {
