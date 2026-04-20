@@ -1,19 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Platform,
-  StatusBar,
   useColorScheme,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
+import WebView from "react-native-webview";
 import { useStations } from "@/hooks/useStations";
 import { useWindowStatus } from "@/hooks/useWindowStatus";
+import { buildMapHtml } from "@/lib/mapHtml";
 import { isUnlocked, lock } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
 import { relativeTime, countdown } from "@/lib/format";
@@ -39,10 +38,14 @@ export default function StationScreen() {
     isUnlocked(id).then(setUnlocked);
   }, [id]);
 
-  const insets = useSafeAreaInsets();
-  const topInset = insets.top > 0
-    ? insets.top
-    : Platform.OS === "android" ? (StatusBar.currentHeight ?? 24) : 0;
+  const miniMapHtml = useMemo(() => {
+    if (!station?.latitude || !station?.longitude) return null;
+    return buildMapHtml(
+      [{ id: station.station_id, name: station.name, location: station.location, lat: station.latitude, lng: station.longitude, overdue: station.is_overdue }],
+      dark,
+      { interactive: false, zoom: 12, lat: station.latitude, lng: station.longitude },
+    );
+  }, [station, dark]);
 
   const windowOpen = !!status?.is_open;
   const opensIn =
@@ -51,7 +54,7 @@ export default function StationScreen() {
   if (!id) return null;
 
   return (
-    <View style={{ flex: 1, paddingTop: topInset }} className={dark ? "bg-gray-950" : "bg-gray-50"}>
+    <SafeAreaView edges={["top"]} className={`flex-1 ${dark ? "bg-gray-950" : "bg-gray-50"}`}>
       {/* Header — same structure as home and notifications */}
       <View
         className={`flex-row items-center border-b px-4 py-2 ${
@@ -160,48 +163,29 @@ export default function StationScreen() {
         )}
 
         {/* Mini-map — only when coordinates are available */}
-        {station?.latitude !== undefined &&
-          station?.longitude !== undefined &&
-          station.latitude !== null &&
-          station.longitude !== null && (
-            <View
-              className={`overflow-hidden rounded-2xl shadow-sm ${dark ? "bg-gray-900" : "bg-white"}`}
-            >
-              <View className="flex-row items-center gap-2 px-4 pt-3 pb-2">
-                <Ionicons
-                  name="map-outline"
-                  size={13}
-                  color={dark ? "#9CA3AF" : "#6B7280"}
-                />
-                <Text className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>
-                  {t("location")}
-                </Text>
-              </View>
-              <MapView
-                style={{ height: 180 }}
-                provider={PROVIDER_DEFAULT}
-                initialRegion={{
-                  latitude: station.latitude,
-                  longitude: station.longitude,
-                  latitudeDelta: 0.15,
-                  longitudeDelta: 0.15,
-                }}
-                scrollEnabled={false}
-                zoomEnabled={false}
-                rotateEnabled={false}
-                pitchEnabled={false}
-              >
-                <Marker
-                  coordinate={{
-                    latitude: station.latitude,
-                    longitude: station.longitude,
-                  }}
-                  title={station.name}
-                  pinColor={station.is_overdue ? "#EF4444" : "#22C55E"}
-                />
-              </MapView>
+        {miniMapHtml && (
+          <View
+            className={`overflow-hidden rounded-2xl shadow-sm ${dark ? "bg-gray-900" : "bg-white"}`}
+          >
+            <View className="flex-row items-center gap-2 px-4 pt-3 pb-2">
+              <Ionicons
+                name="map-outline"
+                size={13}
+                color={dark ? "#9CA3AF" : "#6B7280"}
+              />
+              <Text className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>
+                {t("location")}
+              </Text>
             </View>
-          )}
+            <WebView
+              style={{ height: 180 }}
+              source={{ html: miniMapHtml }}
+              originWhitelist={["*"]}
+              javaScriptEnabled
+              scrollEnabled={false}
+            />
+          </View>
+        )}
 
         <WindowStatusCard />
 
@@ -293,6 +277,6 @@ export default function StationScreen() {
           setLoginVisible(false);
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
