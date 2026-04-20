@@ -1,98 +1,148 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import {
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  ScrollView,
+  RefreshControl,
+  useColorScheme,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useStations } from "@/hooks/useStations";
+import { useLang } from "@/lib/i18n";
+import { StationCard } from "@/components/StationCard";
+import { WindowStatusCard } from "@/components/WindowStatusCard";
+import { LangPicker } from "@/components/LangPicker";
+import type { Station } from "@/lib/types";
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { t } = useLang();
+  const router = useRouter();
+  const dark = useColorScheme() === "dark";
+  const { stations, error, refreshing, onRefresh } = useStations();
+  const [search, setSearch] = useState("");
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const filtered = (stations ?? []).filter(
+    (s) =>
+      !search ||
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.location.toLowerCase().includes(search.toLowerCase()) ||
+      s.station_id.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const header = (
+    <View className="gap-4 pb-2">
+      <WindowStatusCard />
+      <View
+        className={`flex-row items-center gap-2 rounded-xl border px-3 py-2.5 ${
+          dark ? "border-gray-700 bg-gray-900" : "border-gray-200 bg-white"
+        }`}
+      >
+        <Ionicons
+          name="search-outline"
+          size={16}
+          color={dark ? "#9CA3AF" : "#6B7280"}
+        />
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder={`${t("stations")}…`}
+          placeholderTextColor={dark ? "#6B7280" : "#9CA3AF"}
+          className={`flex-1 text-sm ${dark ? "text-white" : "text-gray-900"}`}
+        />
+        {search.length > 0 && (
+          <Ionicons
+            name="close-circle"
+            size={16}
+            color={dark ? "#9CA3AF" : "#6B7280"}
+            onPress={() => setSearch("")}
+          />
+        )}
+      </View>
+      <Text className={`text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
+        {t("stations")}
+        {stations !== null && (
+          <Text className={dark ? "text-gray-500" : "text-gray-400"}>
+            {" "}
+            ({filtered.length})
+          </Text>
+        )}
+      </Text>
+    </View>
+  );
+
+  return (
+    <SafeAreaView className={`flex-1 ${dark ? "bg-gray-950" : "bg-gray-50"}`}>
+      <View
+        className={`flex-row items-center justify-between border-b px-4 py-2 ${
+          dark ? "border-gray-800 bg-gray-950" : "border-gray-100 bg-white"
+        }`}
+      >
+        <View>
+          <Text
+            className={`text-base font-medium ${dark ? "text-white" : "text-gray-900"}`}
+          >
+            SynopNet
+          </Text>
+          <Text
+            className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}
+          >
+            {t("appSubtitle")}
+          </Text>
+        </View>
+        <LangPicker />
+      </View>
+
+      {error ? (
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="flex-1 items-center justify-center p-8"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <Ionicons
+            name="cloud-offline-outline"
+            size={40}
+            color={dark ? "#6B7280" : "#9CA3AF"}
+          />
+          <Text
+            className={`mt-3 text-center text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}
+          >
+            {t("couldNotLoad")}
+          </Text>
+        </ScrollView>
+      ) : (
+        <FlatList<Station>
+          data={filtered}
+          keyExtractor={(item) => item.station_id}
+          renderItem={({ item }) => (
+            <StationCard
+              station={item}
+              onPress={() => router.push(`/station/${item.station_id}`)}
+            />
+          )}
+          ListHeaderComponent={header}
+          ListEmptyComponent={
+            stations !== null ? (
+              <View className="items-center py-12">
+                <Text
+                  className={`text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}
+                >
+                  {t("noStationsYet")}
+                </Text>
+              </View>
+            ) : null
+          }
+          contentContainerClassName="px-4 pt-4 pb-8"
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
