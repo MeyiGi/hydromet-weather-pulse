@@ -7,13 +7,47 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Radio } from "lucide-react";
-import { countdown, localHour, utcHour } from "@/lib/format";
+import { countdown, localHour } from "@/lib/format";
 
 const WINDOW_SECONDS = 20 * 60;
+const WINDOWS = [0, 3, 6, 9, 12, 15, 18, 21];
+
+function windowState(
+  h: number,
+  status: ReturnType<typeof useWindowStatus>["status"],
+): "active" | "next" | "past" | "upcoming" {
+  if (status?.is_open && status.current?.hour === h) return "active";
+  if (status?.next?.hour === h) return "next";
+
+  // determine if this window has already closed today
+  const now = new Date();
+  const windowClose = h * 60 + 20; // minutes past midnight UTC
+  const nowUtc = now.getUTCHours() * 60 + now.getUTCMinutes();
+  if (nowUtc >= windowClose && !(status?.is_open && status.current?.hour === h)) {
+    // check it's not the next-day wraparound (e.g. 21 UTC < next window 0 UTC)
+    if (status?.next?.hour !== undefined && h !== status.next.hour) {
+      const nextClose = status.next.hour * 60 + 20;
+      if (nextClose > windowClose || nowUtc < nextClose) return "past";
+    } else {
+      return "past";
+    }
+  }
+
+  return "upcoming";
+}
 
 export function WindowStatusCard() {
   const { status } = useWindowStatus();
   const { t } = useLang();
+
+  const sorted = WINDOWS.slice().sort((a, b) => {
+    const toLocal = (utcH: number) => {
+      const d = new Date();
+      d.setUTCHours(utcH, 0, 0, 0);
+      return d.getHours() * 60 + d.getMinutes();
+    };
+    return toLocal(a) - toLocal(b);
+  });
 
   return (
     <Card className="rounded-2xl shadow-sm">
@@ -48,9 +82,8 @@ export function WindowStatusCard() {
                   {countdown(status.current.seconds_left)}
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {localHour(status.current.hour)}{" "}
-                <span className="opacity-60">({utcHour(status.current.hour)} UTC)</span>
+              <p className="text-xs font-medium tabular-nums text-foreground">
+                {localHour(status.current.hour)}
               </p>
             </div>
             <Progress
@@ -71,8 +104,10 @@ export function WindowStatusCard() {
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              {t("nextWindow")} {localHour(status.next.hour)}{" "}
-              <span className="opacity-60">({utcHour(status.next.hour)} UTC)</span>
+              {t("nextWindow")}{" "}
+              <span className="font-medium tabular-nums text-foreground">
+                {localHour(status.next.hour)}
+              </span>
             </p>
           </div>
         )}
@@ -80,29 +115,27 @@ export function WindowStatusCard() {
         <Separator />
 
         <div className="flex flex-wrap gap-1.5">
-          {[0, 3, 6, 9, 12, 15, 18, 21]
-            .slice()
-            .sort((a, b) => {
-              const toLocal = (utcH: number) => {
-                const d = new Date();
-                d.setUTCHours(utcH, 0, 0, 0);
-                return d.getHours() * 60 + d.getMinutes();
-              };
-              return toLocal(a) - toLocal(b);
-            })
-            .map((h) => (
-            <Badge
-              key={h}
-              variant={
-                status?.is_open && status.current?.hour === h
-                  ? "default"
-                  : "outline"
-              }
-              className="rounded-full font-mono text-[11px] font-normal"
-            >
-              {localHour(h)}
-            </Badge>
-          ))}
+          {sorted.map((h) => {
+            const state = windowState(h, status);
+            return (
+              <Badge
+                key={h}
+                variant="outline"
+                className={[
+                  "rounded-full font-mono text-[11px] font-normal tabular-nums transition-opacity",
+                  state === "active"
+                    ? "border-transparent bg-foreground text-background"
+                    : state === "next"
+                      ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-500 dark:bg-amber-950/40 dark:text-amber-300"
+                      : state === "past"
+                        ? "opacity-25"
+                        : "opacity-60",
+                ].join(" ")}
+              >
+                {localHour(h)}
+              </Badge>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

@@ -1,5 +1,16 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
+export function getDeviceId(): string {
+  if (typeof window === "undefined") return "";
+  const key = "synopnet-device-id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
 const tokenKey = (id: string) => `station_token:${id}`;
 
 export async function unlockStation(id: string, password: string): Promise<string | null> {

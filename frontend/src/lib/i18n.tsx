@@ -47,6 +47,8 @@ const T = {
     nothingHereYet: "Nothing here yet.",
     unread: "unread",
     toggleTheme: "Toggle theme",
+    searchPlaceholder: "Search stations…",
+    filterAll: "All",
   },
   ru: {
     appSubtitle: "Метеостанции Кыргызстана",
@@ -85,6 +87,8 @@ const T = {
     nothingHereYet: "Пока пусто.",
     unread: "непрочитанных",
     toggleTheme: "Тема",
+    searchPlaceholder: "Поиск станций…",
+    filterAll: "Все",
   },
   kg: {
     appSubtitle: "Кыргызстан аба ырайы станциялары",
@@ -123,6 +127,8 @@ const T = {
     nothingHereYet: "Азырынча эч нерсе жок.",
     unread: "окулган жок",
     toggleTheme: "Тема",
+    searchPlaceholder: "Станцияларды издөө…",
+    filterAll: "Баары",
   },
 } as const;
 

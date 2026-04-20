@@ -24,6 +24,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { MapPin, Clock, Lock, Timer } from "lucide-react";
+import { StationMiniMap } from "@/components/StationMiniMap";
 
 export default function StationPage({
   params,
@@ -130,6 +131,15 @@ export default function StationPage({
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {station?.latitude != null && station?.longitude != null && (
+          <StationMiniMap
+            lat={station.latitude}
+            lng={station.longitude}
+            name={station.name}
+            isOverdue={station.is_overdue}
+          />
         )}
 
         <WindowStatusCard />

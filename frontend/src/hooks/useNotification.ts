@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { Notification } from "@/lib/types";
 
-// Возвращает уведомления + функцию markRead с оптимистичным обновлением
 export function useNotifications() {
   const [items, setItems] = useState<Notification[]>([]);
 
@@ -23,7 +22,6 @@ export function useNotifications() {
     };
   }, []);
 
-  // Оптимистично: сразу меняем UI, потом отправляем на сервер
   const markRead = async (id: number) => {
     setItems((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
@@ -31,9 +29,15 @@ export function useNotifications() {
     await api.markRead(id).catch(() => {});
   };
 
+  const markAllRead = async () => {
+    setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    await api.markAllRead().catch(() => {});
+  };
+
   return {
     items,
     markRead,
+    markAllRead,
     unread: items.filter((n) => !n.is_read).length,
   };
 }

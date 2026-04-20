@@ -1,7 +1,7 @@
 "use client";
 import { useNotifications } from "@/hooks/useNotification";
 import { useLang } from "@/lib/i18n";
-import { Bell, Check, Info, AlertTriangle, AlertCircle } from "lucide-react";
+import { Bell, Info, AlertTriangle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,11 +22,17 @@ const color = {
 };
 
 export function NotificationsBell() {
-  const { items, markRead, unread } = useNotifications();
+  const { items, markAllRead, unread } = useNotifications();
   const { t } = useLang();
 
+  const handleOpen = (open: boolean) => {
+    if (open && unread > 0) {
+      markAllRead();
+    }
+  };
+
   return (
-    <Popover>
+    <Popover onOpenChange={handleOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-full">
           <Bell className="h-5 w-5" />
@@ -44,11 +50,6 @@ export function NotificationsBell() {
       <PopoverContent align="end" className="w-80 rounded-2xl p-0">
         <div className="flex items-center justify-between px-4 py-3">
           <p className="text-sm font-medium">{t("notifications")}</p>
-          {unread > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {unread} {t("unread")}
-            </span>
-          )}
         </div>
         <Separator />
 
@@ -62,9 +63,7 @@ export function NotificationsBell() {
               const Icon = icon[n.level];
               return (
                 <div key={n.id}>
-                  <div
-                    className={`flex gap-3 px-4 py-3 ${!n.is_read ? "bg-muted/40" : ""}`}
-                  >
+                  <div className="flex gap-3 px-4 py-3">
                     <Icon
                       className={`mt-0.5 h-4 w-4 shrink-0 ${color[n.level]}`}
                     />
@@ -75,16 +74,6 @@ export function NotificationsBell() {
                         {relativeTime(n.created_at)}
                       </p>
                     </div>
-                    {!n.is_read && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={() => markRead(n.id)}
-                      >
-                        <Check className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
                   </div>
                   {i < items.length - 1 && <Separator />}
                 </div>
