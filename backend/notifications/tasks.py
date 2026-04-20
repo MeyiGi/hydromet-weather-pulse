@@ -8,10 +8,11 @@ from .channels.fcm import FCMSender
 from .services import NotificationService
 
 def _build_service() -> NotificationService:
-    """gather all senders and build the notification service"""
     tokens = list(PushToken.objects.all())
+    from telegram_bot.sender import TelegramBotSender
     return NotificationService(senders=[
         TelegramSender(),
+        TelegramBotSender(),
         ExpoSender(tokens=[t.token for t in tokens if t.token_type == PushToken.TokenType.EXPO]),
         FCMSender(tokens=[t.token for t in tokens if t.token_type == PushToken.TokenType.FCM]),
     ])

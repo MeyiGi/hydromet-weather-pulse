@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 
     "stations",
     "notifications",
+    "telegram_bot",
 ]
 
 MIDDLEWARE = [

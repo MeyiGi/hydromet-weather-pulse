@@ -222,6 +222,7 @@ class SubmitDataView(APIView):
             title="📡 Data received",
             body=f"Station {station.name} submitted for window {current.hour:02d}:00 UTC.",
             level="info",
+            data={"type": "data_received", "station_id": station.station_id},
         )
 
         return Response({

@@ -21,6 +21,7 @@ from django.urls import include, path
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/stations/", include("stations.urls")),
-    path("api/notifications/", include("notifications.urls"))
+    path("api/notifications/", include("notifications.urls")),
+    path("telegram/", include("telegram_bot.urls")),
 
 ]
