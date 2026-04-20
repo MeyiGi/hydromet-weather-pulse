@@ -128,19 +128,19 @@ class StationListView(APIView):
         # Pagination
         try:
             page = max(1, int(request.query_params.get("page", 1)))
-            page_size = min(100, max(1, int(request.query_params.get("page_size", 12))))
+            page_size = min(100, max(1, int(request.query_params.get("page_size", 10))))
         except (ValueError, TypeError):
             page = 1
-            page_size = 12
+            page_size = 10
 
         total_pages = max(1, math.ceil(total / page_size))
         page = min(page, total_pages)
         offset = (page - 1) * page_size
         stations = list(qs[offset: offset + page_size])
 
-        # Post-filter overdue after DB query (is_overdue is computed)
+        # Post-filter overdue after DB query (submission_status is computed)
         if station_status == "overdue":
-            stations = [s for s in stations if s.is_overdue()]
+            stations = [s for s in stations if s.submission_status() == "overdue"]
             total = len(stations)
             total_pages = max(1, math.ceil(total / page_size))
 
@@ -172,9 +172,20 @@ class SubmitDataView(APIView):
         station_id = request.data.get("station_id", "").strip()
         raw_synop = request.data.get("raw_synop", "").strip()
 
-        if not station_id or not raw_synop:
-            return Response({"error": "station_id and raw_synop are required fields"},
+        if not raw_synop:
+            return Response({"error": "raw_synop is required"},
                             status=status.HTTP_400_BAD_REQUEST)
+
+        # Extract station_id from first SYNOP group if not explicitly provided
+        if not station_id:
+            first_group = raw_synop.split()[0] if raw_synop.split() else ""
+            if first_group.isdigit() and len(first_group) == 5:
+                station_id = first_group
+            else:
+                return Response(
+                    {"error": "station_id not provided and could not be parsed from raw_synop (expected 5-digit WMO number as first group)"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # Validate auth token
         auth_header = request.headers.get("Authorization", "")

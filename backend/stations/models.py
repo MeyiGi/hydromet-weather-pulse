@@ -19,7 +19,30 @@ class Station(models.Model):
         from .bootstrap import window_service
         now = timezone.now()
 
+        last = window_service.last_closed(now)
         current = window_service.current(now)
+
+        # Always check the most recently closed window first.
+        # If the station missed it, they are overdue regardless of any open window.
+        if last is not None:
+            submitted_last = self.submissions.filter(
+                window_hour=last.hour,
+                timestamp__gte=last.opens_at,
+                timestamp__lte=last.closes_at,
+            ).exists()
+            if not submitted_last:
+                return "overdue"
+            # Last window was submitted — check current open window
+            if current:
+                submitted_current = self.submissions.filter(
+                    window_hour=current.hour,
+                    timestamp__gte=current.opens_at,
+                    timestamp__lte=now,
+                ).exists()
+                return "on_time" if submitted_current else "pending"
+            return "on_time"
+
+        # No closed windows yet (service just started)
         if current:
             submitted = self.submissions.filter(
                 window_hour=current.hour,
@@ -28,15 +51,7 @@ class Station(models.Model):
             ).exists()
             return "on_time" if submitted else "pending"
 
-        last = window_service.last_closed(now)
-        if last is None:
-            return "pending"
-        submitted = self.submissions.filter(
-            window_hour=last.hour,
-            timestamp__gte=last.opens_at,
-            timestamp__lte=last.closes_at,
-        ).exists()
-        return "on_time" if submitted else "overdue"
+        return "pending"
     
     def __str__(self):
         return f"{self.name} ({self.station_id})"
