@@ -9,6 +9,11 @@ interface NotificationsContextValue {
   markRead: (id: number) => Promise<void>;
   markAllRead: () => Promise<void>;
   onRefresh: () => Promise<void>;
+  page: number;
+  setPage: (p: number | ((prev: number) => number)) => void;
+  totalPages: number;
+  pageSize: number;
+  setPageSize: (s: number) => void;
 }
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);

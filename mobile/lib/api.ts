@@ -1,4 +1,4 @@
-import { PaginatedStations, WindowStatus, AppNotification } from "./types";
+import { PaginatedStations, WindowStatus, AppNotification, PaginatedNotifications } from "./types";
 import { getToken } from "./auth";
 
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
@@ -26,8 +26,12 @@ export const api = {
     return req<PaginatedStations>(`/api/stations${query ? `?${query}` : ""}`);
   },
   window: () => req<WindowStatus>("/api/stations/window/"),
-  notifications: (deviceId: string) =>
-    req<AppNotification[]>(`/api/notifications/?device_id=${encodeURIComponent(deviceId)}`),
+  notifications: (deviceId: string, params?: { page?: number; page_size?: number }) => {
+    const qs = new URLSearchParams({ device_id: deviceId });
+    if (params?.page) qs.set("page", String(params.page));
+    if (params?.page_size) qs.set("page_size", String(params.page_size));
+    return req<PaginatedNotifications>(`/api/notifications/?${qs.toString()}`);
+  },
   markRead: (id: number, deviceId: string) =>
     req(`/api/notifications/${id}/read/`, {
       method: "PATCH",

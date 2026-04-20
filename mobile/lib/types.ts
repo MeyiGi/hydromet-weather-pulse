@@ -34,3 +34,12 @@ export interface AppNotification {
   created_at: string;
   is_read: boolean;
 }
+
+export interface PaginatedNotifications {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  unread_count: number;
+  results: AppNotification[];
+}

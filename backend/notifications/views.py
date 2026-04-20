@@ -1,3 +1,4 @@
+import math
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Notification, NotificationRead, PushToken
@@ -9,22 +10,49 @@ class NotificationListView(APIView):
 
     def get(self, request):
         device_id = request.query_params.get("device_id", "")
-        notifs = Notification.objects.all()
+        try:
+            page = max(1, int(request.query_params.get("page", 1)))
+        except (ValueError, TypeError):
+            page = 1
+        try:
+            page_size = min(100, max(1, int(request.query_params.get("page_size", 10))))
+        except (ValueError, TypeError):
+            page_size = 10
+
+        qs = Notification.objects.all().order_by("-created_at")
+        total = qs.count()
+        total_pages = max(1, math.ceil(total / page_size))
+        page = min(page, total_pages)
+        offset = (page - 1) * page_size
+        notifs = list(qs[offset: offset + page_size])
+
         if device_id:
             read_ids = set(
                 NotificationRead.objects.filter(device_id=device_id)
                 .values_list("notification_id", flat=True)
             )
+            unread_count = Notification.objects.exclude(
+                reads__device_id=device_id
+            ).count()
         else:
             read_ids = set()
-        return Response([{
-            "id": n.id,
-            "title": n.title,
-            "body": n.body,
-            "level": n.level,
-            "created_at": n.created_at,
-            "is_read": n.id in read_ids,
-        } for n in notifs])
+            unread_count = total
+
+        return Response({
+            "count": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "unread_count": unread_count,
+            "results": [{
+                "id": n.id,
+                "title": n.title,
+                "body": n.body,
+                "level": n.level,
+                "created_at": n.created_at,
+                "is_read": n.id in read_ids,
+            } for n in notifs],
+        })
 
 
 class MarkReadView(APIView):

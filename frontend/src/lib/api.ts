@@ -1,4 +1,4 @@
-import { Station, PaginatedStations, WindowStatus, Notification } from "./types";
+import { Station, PaginatedStations, WindowStatus, Notification, PaginatedNotifications } from "./types";
 import { getToken, getDeviceId } from "./auth";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
@@ -28,10 +28,14 @@ export const api = {
     return req<PaginatedStations>(`/api/stations${query ? `?${query}` : ""}`);
   },
   window: () => req<WindowStatus>("/api/stations/window/"),
-  notifications: () => {
+  notifications: (params?: { page?: number; page_size?: number }) => {
     const deviceId = getDeviceId();
-    const qs = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : "";
-    return req<Notification[]>(`/api/notifications${qs}`);
+    const qs = new URLSearchParams();
+    if (deviceId) qs.set("device_id", deviceId);
+    if (params?.page) qs.set("page", String(params.page));
+    if (params?.page_size) qs.set("page_size", String(params.page_size));
+    const query = qs.toString();
+    return req<PaginatedNotifications>(`/api/notifications${query ? `?${query}` : ""}`);
   },
   markRead: (id: number) =>
     req(`/api/notifications/${id}/read/`, {
