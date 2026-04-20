@@ -23,7 +23,7 @@ import { LoginModal } from "@/components/LoginModal";
 
 export default function StationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const router = useRouter();
   const dark = useColorScheme() === "dark";
 
@@ -56,7 +56,7 @@ export default function StationScreen() {
   const miniMapHtml = useMemo(() => {
     if (!station?.latitude || !station?.longitude) return null;
     return buildMapHtml(
-      [{ id: station.station_id, name: station.name, location: station.location, lat: station.latitude, lng: station.longitude, overdue: station.is_overdue }],
+      [{ id: station.station_id, name: station.name, location: station.location, lat: station.latitude, lng: station.longitude, overdue: station.submission_status === "overdue" }],
       dark,
       { interactive: true, zoom: 12, lat: station.latitude, lng: station.longitude },
     );
@@ -131,19 +131,27 @@ export default function StationScreen() {
               </View>
               <View
                 className={`shrink-0 rounded-full px-2.5 py-1 ${
-                  station.is_overdue
+                  station.submission_status === "overdue"
                     ? dark ? "bg-red-900/40" : "bg-red-100"
+                    : station.submission_status === "pending"
+                    ? dark ? "bg-amber-900/40" : "bg-amber-100"
                     : dark ? "bg-gray-800" : "bg-gray-100"
                 }`}
               >
                 <Text
                   className={`text-xs ${
-                    station.is_overdue
+                    station.submission_status === "overdue"
                       ? dark ? "text-red-400" : "text-red-600"
+                      : station.submission_status === "pending"
+                      ? dark ? "text-amber-400" : "text-amber-600"
                       : dark ? "text-gray-400" : "text-gray-600"
                   }`}
                 >
-                  {station.is_overdue ? t("overdue") : t("onTime")}
+                  {station.submission_status === "overdue"
+                    ? t("overdue")
+                    : station.submission_status === "pending"
+                    ? t("pending")
+                    : t("onTime")}
                 </Text>
               </View>
             </View>
@@ -174,14 +182,14 @@ export default function StationScreen() {
                 color={dark ? "#9CA3AF" : "#6B7280"}
               />
               <Text className={`text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
-                {t("lastSeen")}: {relativeTime(station.last_seen)}
+                {t("lastSeen")}: {relativeTime(station.last_seen, lang)}
               </Text>
             </View>
           </View>
         )}
 
-        {/* Mini-map — only when coordinates are available */}
-        {miniMapHtml && (
+        {/* Mini-map — hidden when login modal is open (WebView renders above RN Modal on Android) */}
+        {miniMapHtml && !loginVisible && (
           <View
             className={`overflow-hidden rounded-2xl shadow-sm ${dark ? "bg-gray-900" : "bg-white"}`}
           >

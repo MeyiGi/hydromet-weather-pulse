@@ -2,12 +2,12 @@ import { Tabs } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { HapticTab } from "@/components/haptic-tab";
 import { Ionicons } from "@expo/vector-icons";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotificationsContext } from "@/context/NotificationsContext";
 import { View, Text } from "react-native";
 import { useLang } from "@/lib/i18n";
 
 function NotificationTabIcon({ color, size }: { color: string; size: number }) {
-  const { unread } = useNotifications();
+  const { unread } = useNotificationsContext();
   return (
     <View>
       <Ionicons name="notifications-outline" size={size} color={color} />
@@ -37,7 +37,7 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
         tabBarStyle: {
           backgroundColor: dark ? "#030712" : "#ffffff",
-          borderTopColor: dark ? "#1f2937" : "#f3f4f6",
+          borderTopColor: dark ? "#1f2937" : "#e5e7eb",
           borderTopWidth: 1,
           elevation: 0,
         },

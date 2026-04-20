@@ -1,16 +1,29 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
 import type { Station } from "@/lib/types";
 
-export function useStations() {
+interface Params {
+  page: number;
+  page_size: number;
+  search: string;
+  status?: string;
+}
+
+export function useStations(params: Params = { page: 1, page_size: 20, search: "" }) {
   const [stations, setStations] = useState<Station[] | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const paramsRef = useRef(params);
+  paramsRef.current = params;
 
   const load = useCallback(async () => {
     try {
-      const data = await api.stations({ page_size: 100 });
+      const data = await api.stations(paramsRef.current);
       setStations(data.results);
+      setTotalPages(data.total_pages);
+      setTotal(data.count);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -27,7 +40,8 @@ export function useStations() {
     load();
     const interval = setInterval(load, 15_000);
     return () => clearInterval(interval);
-  }, [load]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.page, params.page_size, params.search, params.status]);
 
-  return { stations, error, refreshing, onRefresh };
+  return { stations, totalPages, total, error, refreshing, onRefresh };
 }

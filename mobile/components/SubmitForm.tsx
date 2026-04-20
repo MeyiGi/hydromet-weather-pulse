@@ -19,7 +19,10 @@ export function SubmitForm({ stationId, windowOpen, onLock, onSubmitted, onInput
   const [value, setValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [receivedAt, setReceivedAt] = useState<string | null>(null);
-  const complete = value.length === 24;
+  const groups = value.trim().split(/\s+/).filter(Boolean);
+  const complete =
+    groups.length >= 8 &&
+    groups.every((g) => /^\d{3}$/.test(g) || /^\d{5}$/.test(g));
 
   const submit = async () => {
     setSubmitting(true);
@@ -81,7 +84,7 @@ export function SubmitForm({ stationId, windowOpen, onLock, onSubmitted, onInput
 
       <View className="mt-3 flex-row items-center justify-between">
         <Text className={`text-xs tabular-nums ${dark ? "text-gray-400" : "text-gray-500"}`}>
-          {value.length} / 24
+          {groups.length} / 8+
         </Text>
         {!windowOpen && (
           <Text className="text-xs text-amber-500">{t("windowClosed")}</Text>

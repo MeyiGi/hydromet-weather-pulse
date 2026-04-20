@@ -1,5 +1,4 @@
-import { useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, useColorScheme } from "react-native";
+import { View, Text, TextInput, useColorScheme } from "react-native";
 
 interface Props {
   value: string;
@@ -10,65 +9,62 @@ interface Props {
 
 export function SynopInput({ value, onChange, disabled, onFocus }: Props) {
   const dark = useColorScheme() === "dark";
-  const inputRef = useRef<TextInput>(null);
+  const groups = value.trim() ? value.trim().split(/\s+/) : [];
 
-  const focus = () => {
-    if (!disabled) inputRef.current?.focus();
-  };
+  const handleChange = (raw: string) =>
+    onChange(raw.replace(/[^\d\s]/g, "").replace(/\s{2,}/g, " "));
 
   return (
-    <TouchableOpacity onPress={focus} activeOpacity={1}>
-      {/* Hidden real input */}
+    <View className="gap-3">
       <TextInput
-        ref={inputRef}
         value={value}
-        onChangeText={(t) => onChange(t.replace(/[^A-Za-z0-9]/g, "").slice(0, 24).toUpperCase())}
+        onChangeText={handleChange}
         onFocus={onFocus}
         editable={!disabled}
-        maxLength={24}
-        autoCapitalize="characters"
+        placeholder="38476 22999 00801 10083 20000 38358 48610 52003 333 …"
+        placeholderTextColor={dark ? "#6B7280" : "#9CA3AF"}
+        autoCapitalize="none"
         autoCorrect={false}
-        spellCheck={false}
-        style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
-        caretHidden
+        keyboardType="default"
+        style={{ opacity: disabled ? 0.4 : 1 }}
+        className={`rounded-xl border px-4 py-3 font-mono text-sm tracking-wider ${
+          dark
+            ? "border-gray-700 bg-gray-800 text-white"
+            : "border-gray-200 bg-white text-gray-900"
+        }`}
       />
-
-      {/* 6 groups × 4 slots */}
-      <View className={`flex-row flex-wrap justify-center gap-1.5 ${disabled ? "opacity-40" : ""}`}>
-        {Array.from({ length: 6 }).map((_, gi) => (
-          <View key={gi} className="flex-row gap-1">
-            {Array.from({ length: 4 }).map((_, si) => {
-              const idx = gi * 4 + si;
-              const char = value[idx] ?? null;
-              const isCursor = idx === value.length && !disabled;
-              return (
-                <View
-                  key={si}
-                  className={[
-                    "h-11 w-8 items-center justify-center rounded-lg border",
-                    isCursor
-                      ? "border-blue-500 bg-blue-500/10"
-                      : char
-                        ? dark ? "border-gray-500 bg-gray-800" : "border-gray-400 bg-gray-100"
-                        : dark ? "border-gray-700 bg-gray-900" : "border-gray-200 bg-white",
-                  ].join(" ")}
+      {groups.length > 0 && (
+        <View className="flex-row flex-wrap gap-1.5">
+          {groups.map((g, i) => {
+            const sep = g === "333" || g === "555";
+            const valid = /^\d{3}$/.test(g) || /^\d{5}$/.test(g);
+            return (
+              <View
+                key={i}
+                className={`rounded-md px-2 py-0.5 ${
+                  sep
+                    ? dark ? "bg-amber-900/30" : "bg-amber-100"
+                    : valid
+                    ? dark ? "bg-gray-800" : "bg-gray-100"
+                    : dark ? "bg-red-900/30" : "bg-red-100"
+                }`}
+              >
+                <Text
+                  className={`font-mono text-xs ${
+                    sep
+                      ? dark ? "text-amber-400" : "text-amber-700"
+                      : valid
+                      ? dark ? "text-gray-300" : "text-gray-700"
+                      : dark ? "text-red-400" : "text-red-600"
+                  }`}
                 >
-                  <Text
-                    className={[
-                      "font-mono text-sm font-medium",
-                      char
-                        ? dark ? "text-white" : "text-gray-900"
-                        : dark ? "text-gray-700" : "text-gray-300",
-                    ].join(" ")}
-                  >
-                    {char ?? "·"}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        ))}
-      </View>
-    </TouchableOpacity>
+                  {g}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
   );
 }

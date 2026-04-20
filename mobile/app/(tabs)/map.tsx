@@ -28,7 +28,7 @@ export default function MapScreen() {
           location: s.location,
           lat: s.latitude,
           lng: s.longitude,
-          overdue: s.is_overdue,
+          overdue: s.submission_status === "overdue",
         })),
     [stations],
   );

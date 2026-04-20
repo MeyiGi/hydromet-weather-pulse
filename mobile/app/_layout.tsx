@@ -10,6 +10,7 @@ import Constants from "expo-constants";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LangProvider } from "@/lib/i18n";
 import { api } from "@/lib/api";
+import { NotificationsProvider } from "@/context/NotificationsContext";
 
 const isExpoGo = Constants.executionEnvironment === "storeClient";
 
@@ -61,13 +62,15 @@ export default function RootLayout() {
 
   return (
     <LangProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="station/[id]" options={{ headerShown: false }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <NotificationsProvider>
+        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="station/[id]" options={{ headerShown: false }} />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </NotificationsProvider>
     </LangProvider>
   );
 }

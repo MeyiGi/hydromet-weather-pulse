@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function StationCard({ station, onPress }: Props) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const scheme = useColorScheme();
   const dark = scheme === "dark";
 
@@ -34,19 +34,27 @@ export function StationCard({ station, onPress }: Props) {
         </View>
         <View
           className={`shrink-0 rounded-full px-2.5 py-1 ${
-            station.is_overdue
+            station.submission_status === "overdue"
               ? dark ? "bg-red-900/40" : "bg-red-100"
+              : station.submission_status === "pending"
+              ? dark ? "bg-amber-900/40" : "bg-amber-100"
               : dark ? "bg-gray-800" : "bg-gray-100"
           }`}
         >
           <Text
             className={`text-xs font-normal ${
-              station.is_overdue
+              station.submission_status === "overdue"
                 ? dark ? "text-red-400" : "text-red-600"
+                : station.submission_status === "pending"
+                ? dark ? "text-amber-400" : "text-amber-600"
                 : dark ? "text-gray-400" : "text-gray-600"
             }`}
           >
-            {station.is_overdue ? t("overdue") : t("onTime")}
+            {station.submission_status === "overdue"
+              ? t("overdue")
+              : station.submission_status === "pending"
+              ? t("pending")
+              : t("onTime")}
           </Text>
         </View>
       </View>
@@ -74,7 +82,7 @@ export function StationCard({ station, onPress }: Props) {
             color={dark ? "#9CA3AF" : "#6B7280"}
           />
           <Text className={`text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
-            {t("lastSeen")}: {relativeTime(station.last_seen)}
+            {t("lastSeen")}: {relativeTime(station.last_seen, lang)}
           </Text>
         </View>
       </View>
