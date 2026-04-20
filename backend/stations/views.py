@@ -108,13 +108,11 @@ class StationListView(APIView):
         qs = Station.objects.all()
 
         # Status filter
-        station_status = request.query_params.get("status", "active")
-        if station_status == "active":
+        station_status = request.query_params.get("status", "all")
+        if station_status in ("active", "on_time", "overdue"):
             qs = qs.filter(is_active=True)
         elif station_status == "inactive":
             qs = qs.filter(is_active=False)
-        elif station_status == "overdue":
-            qs = qs.filter(is_active=True)
         # "all" → no filter
 
         # Search filter
@@ -123,9 +121,7 @@ class StationListView(APIView):
             from django.db.models import Q
             qs = qs.filter(Q(name__icontains=search) | Q(location__icontains=search))
 
-        total = qs.count()
-
-        # Pagination
+        # Pagination params
         try:
             page = max(1, int(request.query_params.get("page", 1)))
             page_size = min(100, max(1, int(request.query_params.get("page_size", 10))))
@@ -133,16 +129,20 @@ class StationListView(APIView):
             page = 1
             page_size = 10
 
-        total_pages = max(1, math.ceil(total / page_size))
-        page = min(page, total_pages)
-        offset = (page - 1) * page_size
-        stations = list(qs[offset: offset + page_size])
-
-        # Post-filter overdue after DB query (submission_status is computed)
-        if station_status == "overdue":
-            stations = [s for s in stations if s.submission_status() == "overdue"]
-            total = len(stations)
+        # submission_status is computed — must filter in Python before paginating
+        if station_status in ("overdue", "on_time"):
+            all_stations = [s for s in qs if s.submission_status() == station_status]
+            total = len(all_stations)
             total_pages = max(1, math.ceil(total / page_size))
+            page = min(page, total_pages)
+            offset = (page - 1) * page_size
+            stations = all_stations[offset: offset + page_size]
+        else:
+            total = qs.count()
+            total_pages = max(1, math.ceil(total / page_size))
+            page = min(page, total_pages)
+            offset = (page - 1) * page_size
+            stations = list(qs[offset: offset + page_size])
 
         return Response({
             "count": total,

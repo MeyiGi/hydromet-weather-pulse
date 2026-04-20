@@ -8,7 +8,8 @@ import { useLang } from "@/lib/i18n";
 import { useStations } from "@/hooks/useStation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Search, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type Filter = "all" | "onTime" | "overdue";
@@ -20,12 +21,13 @@ export default function Home() {
   const [filter, setFilter] = useState<Filter>("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [pageSizeInput, setPageSizeInput] = useState("10");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [pageSizeOpen, setPageSizeOpen] = useState(false);
 
   const statusParam =
-    filter === "onTime" ? "active" : filter === "overdue" ? "overdue" : "active";
+    filter === "onTime" ? "on_time" : filter === "overdue" ? "overdue" : undefined;
 
-  const { stations, totalPages, total, error } = useStations({
+  const { stations, totalPages, total, error, loading } = useStations({
     page,
     page_size: pageSize,
     search,
@@ -37,19 +39,9 @@ export default function Home() {
   );
 
   const handleSearch = (v: string) => { setSearch(v); setPage(1); };
-  const handleFilter = (f: Filter) => { setFilter(f); setPage(1); };
+  const handleFilter = (f: Filter) => { setFilter(f); setPage(1); setFilterOpen(false); };
 
-  const applyPageSize = (raw: string) => {
-    const n = parseInt(raw, 10);
-    if (!isNaN(n) && n >= 1) {
-      const clamped = Math.min(n, 1000);
-      setPageSize(clamped);
-      setPageSizeInput(String(clamped));
-      setPage(1);
-    } else {
-      setPageSizeInput(String(pageSize));
-    }
-  };
+  const handlePageSize = (s: number) => { setPageSize(s); setPage(1); setPageSizeOpen(false); };
 
   return (
     <div className="min-h-screen bg-muted/20">
@@ -66,89 +58,131 @@ export default function Home() {
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
         <WindowStatusCard />
         {withCoords.length > 0 && (
-          <section>
+          <section className="isolate">
             <StationMap stations={withCoords} onNavigate={(id) => router.push(`/stations/${id}`)} />
           </section>
         )}
         <section>
-          {/* Toolbar — search, filters, per-page, pagination all in one row */}
-          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-sm font-normal text-muted-foreground">
-              {t("stations")}
-              {total > 0 && <span className="ml-1.5 text-muted-foreground/60">({total})</span>}
-            </h2>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder={t("searchPlaceholder")}
-                  className="h-8 w-48 rounded-xl pl-8 text-sm sm:w-56"
-                />
-              </div>
-
-              {/* Status filters */}
-              <div className="flex gap-1">
-                {(["all", "onTime", "overdue"] as Filter[]).map((f) => (
-                  <Button
-                    key={f}
-                    size="sm"
-                    variant={filter === f ? "default" : "ghost"}
-                    className="h-8 rounded-xl px-3 text-xs font-normal"
-                    onClick={() => handleFilter(f)}
-                  >
-                    {f === "all" ? t("filterAll") : f === "onTime" ? t("onTime") : t("overdue")}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Per-page input */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">per page</span>
-                <Input
-                  type="number"
-                  min={1}
-                  value={pageSizeInput}
-                  onChange={(e) => setPageSizeInput(e.target.value)}
-                  onBlur={() => applyPageSize(pageSizeInput)}
-                  onKeyDown={(e) => e.key === "Enter" && applyPageSize(pageSizeInput)}
-                  className="h-8 w-16 rounded-xl text-center text-sm tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-              </div>
-
-              {/* Prev / page indicator / next */}
-              {totalPages > 1 && (
-                <div className="flex items-center gap-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 w-8 rounded-xl p-0"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => p - 1)}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="min-w-[4rem] text-center text-xs text-muted-foreground tabular-nums">
-                    {page} / {totalPages}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 w-8 rounded-xl p-0"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
+          {/* Search row */}
+          <div className="mb-2 relative">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder={t("searchPlaceholder")}
+              className="h-8 w-full rounded-xl pl-8 text-sm"
+            />
           </div>
 
-          <StationGrid stations={stations} error={error} />
+          {/* Toolbar: title + filters left, pagination right */}
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-normal text-muted-foreground">
+                {t("stations")}
+                {total > 0 && <span className="ml-1.5 text-muted-foreground/60">({total})</span>}
+              </h2>
+
+              {/* Status filter dropdown */}
+              <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-xl px-3 text-xs font-normal">
+                    {filter === "all" ? t("filterAll") : filter === "onTime" ? t("onTime") : t("overdue")}
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-36 p-1">
+                  {(["all", "onTime", "overdue"] as Filter[]).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => handleFilter(f)}
+                      className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm hover:bg-accent"
+                    >
+                      {f === "all" ? t("filterAll") : f === "onTime" ? t("onTime") : t("overdue")}
+                      {filter === f && <Check className="h-3.5 w-3.5 text-foreground" />}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+
+              {/* Per-page dropdown */}
+              <Popover open={pageSizeOpen} onOpenChange={setPageSizeOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-xl px-3 text-xs font-normal tabular-nums">
+                    {pageSize}
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-28 p-1">
+                  {[10, 20, 50, 100].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handlePageSize(s)}
+                      className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm hover:bg-accent"
+                    >
+                      {s}
+                      {pageSize === s && <Check className="h-3.5 w-3.5 text-foreground" />}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Pagination — right side */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 rounded-xl p-0"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="min-w-[4rem] text-center text-xs text-muted-foreground tabular-nums">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 rounded-xl p-0"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <StationGrid stations={stations} error={error} loading={loading} />
+
+          {/* Bottom pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 w-8 rounded-xl p-0"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[4rem] text-center text-xs text-muted-foreground tabular-nums">
+                {page} / {totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 w-8 rounded-xl p-0"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </section>
       </main>
     </div>

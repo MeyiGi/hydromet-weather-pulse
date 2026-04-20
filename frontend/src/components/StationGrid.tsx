@@ -9,9 +9,10 @@ import type { Station } from "@/lib/types";
 interface Props {
   stations: Station[] | null;
   error?: string | null;
+  loading?: boolean;
 }
 
-export function StationGrid({ stations, error }: Props) {
+export function StationGrid({ stations, error, loading }: Props) {
   const { t } = useLang();
 
   if (error)
@@ -23,7 +24,7 @@ export function StationGrid({ stations, error }: Props) {
       </Alert>
     );
 
-  if (!stations)
+  if (loading || !stations)
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (

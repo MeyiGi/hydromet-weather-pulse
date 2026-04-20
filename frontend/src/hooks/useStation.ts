@@ -8,7 +8,7 @@ interface Params {
   page: number;
   page_size: number;
   search: string;
-  status: string;
+  status?: string;
 }
 
 export function useStations(params: Params) {
@@ -16,11 +16,13 @@ export function useStations(params: Params) {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const paramsRef = useRef(params);
   paramsRef.current = params;
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
     const load = async () => {
       try {
         const data = await api.stations(paramsRef.current);
@@ -29,9 +31,10 @@ export function useStations(params: Params) {
           setTotalPages(data.total_pages);
           setTotal(data.count);
           setError(null);
+          setLoading(false);
         }
       } catch (e) {
-        if (active) setError((e as Error).message);
+        if (active) { setError((e as Error).message); setLoading(false); }
       }
     };
     load();
@@ -43,5 +46,5 @@ export function useStations(params: Params) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.page, params.page_size, params.search, params.status]);
 
-  return { stations, totalPages, total, error };
+  return { stations, totalPages, total, error, loading };
 }
