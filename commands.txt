@@ -1,0 +1,8 @@
+zip -r backend.zip . -x "*.git/*" "*.venv/*" "venv/*" "**/__pycache__/*" "**/*.log" "**/*.mp4" "**/*.mp3" "node_modules/*" ".next/*" "data/logs/*" "backup/*" "**/venv/*" "**/node_modules/*" "**/.next/*" "**/backup/" "**/*.md" "**/logs/*" "**/.expo/*" "**/expo/*" "**/.vscode/*" ".vscode/*" "downloads/*" ".pytest_cache/*" ".claude/*" "__pycache__/*" "*.deb" "backup/*" "tests/*" "data/*" "*.zip" "**/*.zip"
+
+celery -A config worker --loglevel=info
+
+sudo /home/meyigi/Android/sdk/platform-tools/adb kill-server
+sudo /home/meyigi/Android/sdk/platform-tools/adb start-server
+adb devices
+npx expo run:android
