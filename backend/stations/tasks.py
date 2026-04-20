@@ -1,8 +1,13 @@
 from celery import shared_task
 from django.utils import timezone
 from django.core.cache import cache
+from datetime import datetime, timezone as dt_timezone
 
 from .bootstrap import window_service
+
+
+def _local_hour(utc_aware_dt) -> str:
+    return timezone.localtime(utc_aware_dt).strftime("%H:%M")
 
 PRE_OPEN_MINUTES = 15
 CLOSING_SOON_MINUTES = 3
@@ -33,7 +38,7 @@ def check_window_transition():
                 _mark_notif_sent(key)
                 deliver_notification.delay(
                     title="⏰ Скоро откроется окно",
-                    body=f"Через {opens_in // 60} мин откроется окно {nxt.hour:02d}:00 UTC. Подготовьте данные SYNOP.",
+                    body=f"Через {opens_in // 60} мин откроется окно {_local_hour(nxt.opens_at)}. Подготовьте данные SYNOP.",
                     level="info",
                     data={"type": "window_pre_open", "hour": str(nxt.hour)},
                 )
@@ -47,7 +52,7 @@ def check_window_transition():
             _mark_notif_sent(key_opened)
             deliver_notification.delay(
                 title="📡 Окно подачи данных открыто",
-                body=f"Окно {current.hour:02d}:00 UTC открыто. Отправьте данные SYNOP.",
+                body=f"Окно {_local_hour(current.opens_at)} открыто. Отправьте данные SYNOP.",
                 level="info",
                 data={"type": "window_opened", "hour": str(current.hour)},
             )
@@ -60,7 +65,7 @@ def check_window_transition():
                 _mark_notif_sent(key_closing)
                 deliver_notification.delay(
                     title="⚠️ Осталось 3 минуты!",
-                    body=f"Окно {current.hour:02d}:00 UTC закрывается через {seconds_left // 60} мин. Поторопитесь!",
+                    body=f"Окно {_local_hour(current.opens_at)} закрывается через {seconds_left // 60} мин. Поторопитесь!",
                     level="warning",
                     data={"type": "window_closing_soon", "hour": str(current.hour)},
                 )
@@ -80,9 +85,49 @@ def check_window_transition():
             key_closed = f"notif_closed_{last_open_hour}_{last_open_date}"
             if not _notif_sent(key_closed):
                 _mark_notif_sent(key_closed)
+                local_closed = _local_hour(
+                    datetime(
+                        *[int(p) for p in last_open_date.split("-")],
+                        last_open_hour, tzinfo=dt_timezone.utc
+                    )
+                )
                 deliver_notification.delay(
                     title="🔒 Окно закрыто",
-                    body=f"Окно {last_open_hour:02d}:00 UTC закрыто. Следующее откроется скоро.",
+                    body=f"Окно {local_closed} закрыто. Следующее откроется скоро.",
                     level="info",
                     data={"type": "window_closed", "hour": str(last_open_hour)},
+                )
+                notify_overdue_stations.apply_async(
+                    args=[last_open_hour, last_open_date], countdown=120
+                )
+
+
+@shared_task
+def notify_overdue_stations(window_hour: int, window_date_str: str):
+    from notifications.tasks import deliver_notification
+    from .models import Station, DataSubmission
+    from datetime import date
+
+    window_date = date.fromisoformat(window_date_str)
+    base = datetime(window_date.year, window_date.month, window_date.day, window_hour, tzinfo=dt_timezone.utc)
+    opens_at = base + window_service.open_offset
+    closes_at = base + window_service.close_offset
+
+    for station in Station.objects.filter(is_active=True):
+        submitted = DataSubmission.objects.filter(
+            station=station,
+            window_hour=window_hour,
+            timestamp__gte=opens_at,
+            timestamp__lte=closes_at,
+        ).exists()
+
+        if not submitted:
+            key = f"notif_overdue_{station.station_id}_{window_hour}_{window_date_str}"
+            if not _notif_sent(key):
+                cache.set(key, True, timeout=86400)
+                deliver_notification.delay(
+                    title="❌ Данные не поданы",
+                    body=f"{station.name} ({station.station_id}) не отправила данные в окне {_local_hour(opens_at)}.",
+                    level="warning",
+                    data={"type": "station_overdue", "station_id": station.station_id},
                 )

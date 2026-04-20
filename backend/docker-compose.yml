@@ -10,6 +10,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - /app/.venv
     env_file:
       - .env
     environment:
@@ -23,6 +24,7 @@ services:
     build: .
     volumes:
       - .:/app
+      - /app/.venv
     env_file:
       - .env
     environment:
@@ -36,6 +38,7 @@ services:
     build: .
     volumes:
       - .:/app
+      - /app/.venv
     env_file:
       - .env
     environment:
@@ -49,6 +52,7 @@ services:
     build: .
     volumes:
       - .:/app
+      - /app/.venv
     env_file:
       - .env
     environment:

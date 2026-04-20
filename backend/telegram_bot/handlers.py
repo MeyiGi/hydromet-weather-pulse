@@ -8,6 +8,9 @@ HELP_TEXT = (
     "Используйте кнопки меню внизу или команды:\n\n"
     "/status — сводка по всем станциям\n"
     "/overdue — просроченные станции\n"
+    "/window — текущее окно SYNOP\n"
+    "/today — отчёт за сегодня\n"
+    "/stats — статистика за 7 дней\n"
     "/subscriptions — мои подписки\n"
     "/setlevel — фильтр уровня уведомлений\n"
     "/subscribe — подписаться на станцию\n"
@@ -60,9 +63,10 @@ def handle_status(message: dict):
 
     inactive = Station.objects.filter(is_active=False).count()
     now = timezone.now()
+    now_local = timezone.localtime(now)
 
     text = (
-        f"<b>📊 Статус станций</b> — {now.strftime('%H:%M UTC')}\n\n"
+        f"<b>📊 Статус станций</b> — {now_local.strftime('%H:%M')}\n\n"
         f"✅ Вовремя:    <b>{counts['on_time']}</b>\n"
         f"⏳ Ожидание:  <b>{counts['pending']}</b>\n"
         f"❌ Просрочено: <b>{counts['overdue']}</b>\n"
@@ -87,9 +91,16 @@ def handle_overdue(message: dict):
     for s in overdue:
         if s.last_seen:
             delta = timezone.now() - s.last_seen
-            h = int(delta.total_seconds() // 3600)
+            total_h = int(delta.total_seconds() // 3600)
             m = int((delta.total_seconds() % 3600) // 60)
-            ago = f"{h}ч {m}м назад" if h else f"{m}м назад"
+            if total_h >= 48:
+                ago = f"{total_h // 24}д назад"
+            elif total_h >= 24:
+                ago = f"1д {total_h % 24}ч назад"
+            elif total_h:
+                ago = f"{total_h}ч {m}м назад"
+            else:
+                ago = f"{m}м назад"
         else:
             ago = "никогда"
         lines.append(f"• <b>{s.name}</b> (<code>{s.station_id}</code>) — {ago}")
@@ -118,6 +129,114 @@ def handle_subscriptions(message: dict):
         text = "\n".join(lines)
 
     send_message(chat.chat_id, text)
+
+
+def handle_window(message: dict):
+    chat = _get_or_create_chat(message)
+    from stations.bootstrap import window_service
+
+    now = timezone.now()
+    current = window_service.current(now)
+
+    if current:
+        left = current.seconds_left(now)
+        m, s = divmod(left, 60)
+        opens_local = timezone.localtime(current.opens_at)
+        closes_local = timezone.localtime(current.closes_at)
+        text = (
+            f"<b>🟢 Окно открыто</b> — {opens_local.strftime('%H:%M')}\n\n"
+            f"Закрывается через: <b>{m} мин {s} сек</b>\n"
+            f"Период: {opens_local.strftime('%H:%M')} – {closes_local.strftime('%H:%M')}"
+        )
+    else:
+        nxt = window_service.next(now)
+        opens_in = nxt.opens_in(now)
+        h_part, rem = divmod(opens_in, 3600)
+        m_part = rem // 60
+        time_str = f"{h_part}ч {m_part}м" if h_part else f"{m_part} мин"
+        nxt_local = timezone.localtime(nxt.opens_at)
+        text = (
+            f"<b>🔒 Окно закрыто</b>\n\n"
+            f"Следующее окно: <b>{nxt_local.strftime('%H:%M')}</b>\n"
+            f"Откроется через: <b>{time_str}</b>"
+        )
+
+    send_message(chat.chat_id, text)
+
+
+def handle_today(message: dict):
+    chat = _get_or_create_chat(message)
+    from stations.models import Station, DataSubmission
+    from stations.bootstrap import window_service
+
+    now = timezone.now()
+    today = timezone.localtime(now).date()
+
+    closed_windows = [
+        w for w in window_service._iter_windows(today)
+        if timezone.localtime(w.opens_at).date() == today and w.closes_at < now
+    ]
+
+    if not closed_windows:
+        send_message(chat.chat_id, "📅 Сегодня ещё не было закрытых окон.")
+        return
+
+    stations = list(Station.objects.filter(is_active=True).order_by("name"))
+    from_dt = min(w.opens_at for w in closed_windows)
+    to_dt = max(w.closes_at for w in closed_windows)
+
+    subs = set(
+        DataSubmission.objects.filter(
+            timestamp__gte=from_dt,
+            timestamp__lte=to_dt,
+        ).values_list("station_id", "window_hour")
+    )
+
+    total_expected = len(stations) * len(closed_windows)
+    total_submitted = 0
+    lines = [f"<b>📅 Отчёт за сегодня</b> ({today.strftime('%d.%m.%Y')})\n"]
+    lines.append(f"Закрытых окон: {len(closed_windows)}\n")
+
+    for station in stations:
+        count = sum(1 for w in closed_windows if (station.id, w.hour) in subs)
+        total_submitted += count
+        icon = "✅" if count == len(closed_windows) else ("⚠️" if count > 0 else "❌")
+        lines.append(f"{icon} <b>{station.name}</b>: {count}/{len(closed_windows)}")
+
+    pct = int(100 * total_submitted / total_expected) if total_expected else 0
+    lines.append(f"\n<b>Итого: {total_submitted}/{total_expected} ({pct}%)</b>")
+    send_message(chat.chat_id, "\n".join(lines))
+
+
+def handle_stats(message: dict):
+    chat = _get_or_create_chat(message)
+    from stations.models import Station, DataSubmission
+    from stations.bootstrap import window_service
+    from django.db.models.functions import TruncDate
+    import datetime as dt
+
+    now = timezone.now()
+    week_start = now - dt.timedelta(days=7)
+    stations = list(Station.objects.filter(is_active=True).order_by("name"))
+    total_expected = 7 * len(window_service.hours)
+
+    lines = [f"<b>📈 Статистика за 7 дней</b>\n"]
+
+    for station in stations:
+        count = (
+            DataSubmission.objects
+            .filter(station=station, timestamp__gte=week_start)
+            .annotate(day=TruncDate("timestamp"))
+            .values("day", "window_hour")
+            .distinct()
+            .count()
+        )
+        pct = min(100, int(100 * count / total_expected)) if total_expected else 0
+        filled = pct // 10
+        bar = "█" * filled + "░" * (10 - filled)
+        lines.append(f"<b>{station.name}</b>  {bar} {pct}%")
+
+    send_message(chat.chat_id, "\n".join(lines))
 
 
 def handle_settings_menu(message: dict):
@@ -279,6 +398,9 @@ def handle_callback_query(callback: dict):
 BUTTON_MAP = {
     "📊 статус": "/status",
     "❌ просроченные": "/overdue",
+    "🕐 окно": "/window",
+    "📅 сегодня": "/today",
+    "📈 статистика": "/stats",
     "📋 подписки": "/subscriptions",
     "⚙️ настройки": "settings",
     "❓ помощь": "/help",
@@ -311,6 +433,9 @@ def handle_message(message: dict):
         "/help": lambda: handle_help(message),
         "/status": lambda: handle_status(message),
         "/overdue": lambda: handle_overdue(message),
+        "/window": lambda: handle_window(message),
+        "/today": lambda: handle_today(message),
+        "/stats": lambda: handle_stats(message),
         "/subscriptions": lambda: handle_subscriptions(message),
         "/settings": lambda: handle_settings_menu(message),
         "/subscribe": lambda: _handle_subscribe_cmd(message, args),

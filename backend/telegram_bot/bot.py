@@ -58,8 +58,9 @@ def edit_message_text(chat_id: int, message_id: int, text: str, reply_markup: di
 MAIN_KEYBOARD = {
     "keyboard": [
         ["📊 Статус", "❌ Просроченные"],
-        ["📋 Подписки", "⚙️ Настройки"],
-        ["❓ Помощь"],
+        ["🕐 Окно", "📅 Сегодня"],
+        ["📈 Статистика", "📋 Подписки"],
+        ["⚙️ Настройки", "❓ Помощь"],
     ],
     "resize_keyboard": True,
     "persistent": True,
