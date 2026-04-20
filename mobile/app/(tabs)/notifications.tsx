@@ -3,12 +3,13 @@ import {
   Text,
   FlatList,
   ScrollView,
-  TouchableOpacity,
   RefreshControl,
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useLang } from "@/lib/i18n";
 import { relativeTime } from "@/lib/format";
@@ -30,17 +31,21 @@ const levelColor = {
 export default function NotificationsScreen() {
   const { t } = useLang();
   const dark = useColorScheme() === "dark";
-  const { items, markRead, unread, refreshing, onRefresh } = useNotifications();
+  const { items, markAllRead, unread, refreshing, onRefresh } = useNotifications();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (unread > 0) {
+        markAllRead();
+      }
+    }, [unread, markAllRead]),
+  );
 
   const renderItem = ({ item }: { item: AppNotification }) => {
     const color = levelColor[item.level][dark ? "dark" : "light"];
 
     return (
-      <View
-        className={`mb-px flex-row gap-3 px-4 py-3 ${
-          !item.is_read ? (dark ? "bg-gray-800/50" : "bg-gray-50") : ""
-        }`}
-      >
+      <View className={`mb-px flex-row gap-3 px-4 py-3`}>
         <Ionicons
           name={levelIcon[item.level]}
           size={17}
@@ -64,18 +69,6 @@ export default function NotificationsScreen() {
             {relativeTime(item.created_at)}
           </Text>
         </View>
-        {!item.is_read && (
-          <TouchableOpacity
-            onPress={() => markRead(item.id)}
-            className="h-7 w-7 items-center justify-center"
-          >
-            <Ionicons
-              name="checkmark"
-              size={16}
-              color={dark ? "#9CA3AF" : "#6B7280"}
-            />
-          </TouchableOpacity>
-        )}
       </View>
     );
   };
@@ -87,18 +80,11 @@ export default function NotificationsScreen() {
           dark ? "border-gray-800 bg-gray-950" : "border-gray-100 bg-white"
         }`}
       >
-        <View>
-          <Text
-            className={`text-base font-medium ${dark ? "text-white" : "text-gray-900"}`}
-          >
-            {t("notifications")}
-          </Text>
-          <Text
-            className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}
-          >
-            {unread > 0 ? `${unread} ${t("unread")}` : " "}
-          </Text>
-        </View>
+        <Text
+          className={`text-base font-medium ${dark ? "text-white" : "text-gray-900"}`}
+        >
+          {t("notifications")}
+        </Text>
         <LangPicker />
       </View>
 

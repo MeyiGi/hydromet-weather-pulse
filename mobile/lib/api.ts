@@ -33,6 +33,11 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ device_id: deviceId }),
     }),
+  markAllRead: (deviceId: string) =>
+    req(`/api/notifications/read-all/`, {
+      method: "PATCH",
+      body: JSON.stringify({ device_id: deviceId }),
+    }),
   registerToken: (token: string) =>
     req("/api/notifications/token/", {
       method: "POST",

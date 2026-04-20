@@ -41,6 +41,14 @@ export function useNotifications() {
     }
   }, [getOrLoadDeviceId]);
 
+  const markAllRead = useCallback(async () => {
+    setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    try {
+      const deviceId = await getOrLoadDeviceId();
+      await api.markAllRead(deviceId);
+    } catch {}
+  }, [getOrLoadDeviceId]);
+
   useEffect(() => {
     load();
     const interval = setInterval(load, 20_000);
@@ -49,5 +57,5 @@ export function useNotifications() {
 
   const unread = items.filter((n) => !n.is_read).length;
 
-  return { items, markRead, unread, refreshing, onRefresh };
+  return { items, markRead, markAllRead, unread, refreshing, onRefresh };
 }

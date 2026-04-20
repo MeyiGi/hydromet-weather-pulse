@@ -51,6 +51,8 @@ const T = {
     stationsOnMap: "Stations on map",
     noCoordinates: "No coordinates",
     location: "Location",
+    comingSoon: "Coming Soon",
+    comingSoonDesc: "Map functionality will be available in a future version.",
   },
   ru: {
     appSubtitle: "Метеостанции Кыргызстана",
@@ -93,6 +95,8 @@ const T = {
     stationsOnMap: "Станции на карте",
     noCoordinates: "Нет координат",
     location: "Расположение",
+    comingSoon: "Скоро",
+    comingSoonDesc: "Функция карты будет доступна в следующей версии.",
   },
   kg: {
     appSubtitle: "Кыргызстан аба ырайы станциялары",
@@ -135,6 +139,8 @@ const T = {
     stationsOnMap: "Станциялар картада",
     noCoordinates: "Координаттар жок",
     location: "Жайгашуу",
+    comingSoon: "Жакында",
+    comingSoonDesc: "Карта функциясы кийинки версияда жеткиликтүү болот.",
   },
 } as const;
 

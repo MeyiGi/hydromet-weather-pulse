@@ -37,12 +37,12 @@ export default function MapScreen() {
         <Text
           className={`text-xl font-semibold ${dark ? "text-white" : "text-gray-900"}`}
         >
-          Coming Soon
+          {t("comingSoon")}
         </Text>
         <Text
           className={`text-center text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}
         >
-          Map functionality will be available in a future version.
+          {t("comingSoonDesc")}
         </Text>
       </View>
     </SafeAreaView>
