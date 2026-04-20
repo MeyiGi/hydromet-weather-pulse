@@ -22,7 +22,7 @@ def _station_dict(s: Station, now=None) -> dict:
         "name": s.name,
         "location": s.location,
         "last_seen": s.last_seen,
-        "is_overdue": s.is_overdue(),
+        "submission_status": s.submission_status(),
         "is_active": s.is_active,
         "latitude": float(s.latitude) if s.latitude is not None else None,
         "longitude": float(s.longitude) if s.longitude is not None else None,
@@ -36,9 +36,14 @@ class WindowStatusView(APIView):
     def get(self, request):
         now = timezone.now()
         current = window_service.current(now)
+        duration_s = int((window_service.close_offset - window_service.open_offset).total_seconds())
+        close_offset_min = int(window_service.close_offset.total_seconds() / 60)
         return Response(
             {
                 "is_open": current is not None,
+                "windows": window_service.hours,
+                "window_duration_seconds": duration_s,
+                "window_close_offset_minutes": close_offset_min,
                 "current": (
                     {
                         "hour": current.hour,

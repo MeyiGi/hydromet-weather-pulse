@@ -59,3 +59,8 @@ class WindowService:
         # fallback → tomorrow
         tomorrow = now.date() + timedelta(days=1)
         return next(self._iter_windows(tomorrow))
+
+    def last_closed(self, now: Optional[datetime] = None) -> Optional[Window]:
+        now = now or datetime.now(timezone.utc)
+        candidates = [w for w in self._iter_windows(now.date()) if w.closes_at < now]
+        return max(candidates, key=lambda w: w.closes_at) if candidates else None

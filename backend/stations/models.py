@@ -14,11 +14,29 @@ class Station(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     password = models.CharField(max_length=255, blank=True)
 
-    def is_overdue(self) -> bool:
-        if not self.last_seen:
-            return True
+    def submission_status(self) -> str:
+        """Returns 'on_time', 'pending', or 'overdue' based on window config."""
+        from .bootstrap import window_service
         now = timezone.now()
-        return (now - self.last_seen).total_seconds() > 3* 3600  # 3 hour
+
+        current = window_service.current(now)
+        if current:
+            submitted = self.submissions.filter(
+                window_hour=current.hour,
+                timestamp__gte=current.opens_at,
+                timestamp__lte=now,
+            ).exists()
+            return "on_time" if submitted else "pending"
+
+        last = window_service.last_closed(now)
+        if last is None:
+            return "pending"
+        submitted = self.submissions.filter(
+            window_hour=last.hour,
+            timestamp__gte=last.opens_at,
+            timestamp__lte=last.closes_at,
+        ).exists()
+        return "on_time" if submitted else "overdue"
     
     def __str__(self):
         return f"{self.name} ({self.station_id})"
