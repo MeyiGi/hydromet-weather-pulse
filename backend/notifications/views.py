@@ -1,6 +1,5 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
 from .models import Notification, NotificationRead, PushToken
 
 
@@ -41,6 +40,19 @@ class MarkReadView(APIView):
         except Notification.DoesNotExist:
             return Response({"error": "Not found"}, status=404)
         NotificationRead.objects.get_or_create(notification=n, device_id=device_id)
+        return Response({"status": "ok"})
+
+
+class MarkAllReadView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def patch(self, request):
+        device_id = request.data.get("device_id", "").strip()
+        if not device_id:
+            return Response({"error": "device_id required"}, status=400)
+        for n in Notification.objects.all():
+            NotificationRead.objects.get_or_create(notification=n, device_id=device_id)
         return Response({"status": "ok"})
 
 
