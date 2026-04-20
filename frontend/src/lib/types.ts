@@ -3,7 +3,7 @@ export interface Station {
   name: string;
   location: string;
   last_seen: string | null;
-  is_overdue: boolean;
+  submission_status: "on_time" | "pending" | "overdue";
   is_active: boolean;
   latitude: number | null;
   longitude: number | null;
@@ -19,6 +19,9 @@ export interface PaginatedStations {
 
 export interface WindowStatus {
   is_open: boolean;
+  windows: number[];
+  window_duration_seconds: number;
+  window_close_offset_minutes: number;
   current: { hour: number; closes_at: string; seconds_left: number };
   next: { hour: number; opens_at: string; opens_in_seconds: number };
 }

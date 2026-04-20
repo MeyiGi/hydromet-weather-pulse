@@ -9,24 +9,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Radio } from "lucide-react";
 import { countdown, localHour } from "@/lib/format";
 
-const WINDOW_SECONDS = 20 * 60;
-const WINDOWS = [0, 3, 6, 9, 12, 15, 18, 21];
-
 function windowState(
   h: number,
+  closeOffsetMin: number,
   status: ReturnType<typeof useWindowStatus>["status"],
 ): "active" | "next" | "past" | "upcoming" {
   if (status?.is_open && status.current?.hour === h) return "active";
   if (status?.next?.hour === h) return "next";
 
-  // determine if this window has already closed today
   const now = new Date();
-  const windowClose = h * 60 + 20; // minutes past midnight UTC
+  const windowClose = h * 60 + closeOffsetMin;
   const nowUtc = now.getUTCHours() * 60 + now.getUTCMinutes();
   if (nowUtc >= windowClose && !(status?.is_open && status.current?.hour === h)) {
-    // check it's not the next-day wraparound (e.g. 21 UTC < next window 0 UTC)
     if (status?.next?.hour !== undefined && h !== status.next.hour) {
-      const nextClose = status.next.hour * 60 + 20;
+      const nextClose = status.next.hour * 60 + closeOffsetMin;
       if (nextClose > windowClose || nowUtc < nextClose) return "past";
     } else {
       return "past";
@@ -40,7 +36,11 @@ export function WindowStatusCard() {
   const { status } = useWindowStatus();
   const { t } = useLang();
 
-  const sorted = WINDOWS.slice().sort((a, b) => {
+  const windows = status?.windows ?? [];
+  const durationSeconds = status?.window_duration_seconds ?? 1200;
+  const closeOffsetMin = status?.window_close_offset_minutes ?? 20;
+
+  const sorted = windows.slice().sort((a, b) => {
     const toLocal = (utcH: number) => {
       const d = new Date();
       d.setUTCHours(utcH, 0, 0, 0);
@@ -88,7 +88,7 @@ export function WindowStatusCard() {
             </div>
             <Progress
               value={Math.round(
-                (status.current.seconds_left / WINDOW_SECONDS) * 100,
+                (status.current.seconds_left / durationSeconds) * 100,
               )}
               className="h-1.5"
             />
@@ -116,7 +116,7 @@ export function WindowStatusCard() {
 
         <div className="flex flex-wrap gap-1.5">
           {sorted.map((h) => {
-            const state = windowState(h, status);
+            const state = windowState(h, closeOffsetMin, status);
             return (
               <Badge
                 key={h}

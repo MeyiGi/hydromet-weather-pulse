@@ -9,12 +9,14 @@ import { useStations } from "@/hooks/useStation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type Filter = "all" | "onTime" | "overdue";
 
 export default function Home() {
   const { t } = useLang();
   const { stations, error } = useStations();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -59,7 +61,10 @@ export default function Home() {
         <WindowStatusCard />
         {withCoords.length > 0 && (
           <section>
-            <StationMap stations={withCoords} />
+            <StationMap
+            stations={withCoords}
+            onNavigate={(id) => router.push(`/stations/${id}`)}
+          />
           </section>
         )}
         <section>

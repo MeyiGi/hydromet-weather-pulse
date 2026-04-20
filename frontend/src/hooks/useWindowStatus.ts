@@ -49,7 +49,7 @@ export function useWindowStatus() {
     };
 
     load();
-    const apiId = setInterval(load, 10_000);
+    const apiId = setInterval(load, 5_000);
     const tickId = setInterval(applyElapsed, 1_000);
 
     return () => {
