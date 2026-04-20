@@ -1,44 +1,12 @@
-import { useMemo } from "react";
 import { View, Text, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import WebView from "react-native-webview";
-import { useRouter } from "expo-router";
-import { useStations } from "@/hooks/useStations";
+import { Ionicons } from "@expo/vector-icons";
 import { useLang } from "@/lib/i18n";
 import { LangPicker } from "@/components/LangPicker";
-import { buildMapHtml, type MapMarker } from "@/lib/mapHtml";
-import type { Station } from "@/lib/types";
 
 export default function MapScreen() {
   const { t } = useLang();
   const dark = useColorScheme() === "dark";
-  const router = useRouter();
-  const { stations } = useStations();
-
-  const markers: MapMarker[] = useMemo(
-    () =>
-      (stations ?? [])
-        .filter(
-          (s): s is Station & { latitude: number; longitude: number } =>
-            s.latitude !== null && s.longitude !== null,
-        )
-        .map((s) => ({
-          id: s.station_id,
-          name: s.name,
-          location: s.location,
-          lat: s.latitude,
-          lng: s.longitude,
-          overdue: s.is_overdue,
-        })),
-    [stations],
-  );
-
-  const unmapped = (stations ?? []).length - markers.length;
-
-  const html = useMemo(
-    () => buildMapHtml(markers, dark, { interactive: true, zoom: 6, lat: 41.2, lng: 74.7 }),
-    [markers, dark],
-  );
 
   return (
     <SafeAreaView
@@ -51,35 +19,32 @@ export default function MapScreen() {
           dark ? "border-gray-800 bg-gray-950" : "border-gray-100 bg-white"
         }`}
       >
-        <View>
-          <Text
-            className={`text-base font-medium ${dark ? "text-white" : "text-gray-900"}`}
-          >
-            {t("map")}
-          </Text>
-          <Text className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>
-            {markers.length} {t("stationsOnMap")}
-            {unmapped > 0 ? ` · ${unmapped} ${t("noCoordinates")}` : ""}
-          </Text>
-        </View>
+        <Text
+          className={`text-base font-medium ${dark ? "text-white" : "text-gray-900"}`}
+        >
+          {t("map")}
+        </Text>
         <LangPicker />
       </View>
 
-      {/* Leaflet map */}
-      <WebView
-        style={{ flex: 1 }}
-        source={{ html }}
-        originWhitelist={["*"]}
-        javaScriptEnabled
-        onMessage={(e) => {
-          try {
-            const msg = JSON.parse(e.nativeEvent.data);
-            if (msg.type === "navigate" && msg.id) {
-              router.push(`/station/${msg.id}`);
-            }
-          } catch {}
-        }}
-      />
+      {/* Coming Soon */}
+      <View className="flex-1 items-center justify-center gap-4 px-8">
+        <Ionicons
+          name="map-outline"
+          size={64}
+          color={dark ? "#4B5563" : "#D1D5DB"}
+        />
+        <Text
+          className={`text-xl font-semibold ${dark ? "text-white" : "text-gray-900"}`}
+        >
+          Coming Soon
+        </Text>
+        <Text
+          className={`text-center text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}
+        >
+          Map functionality will be available in a future version.
+        </Text>
+      </View>
     </SafeAreaView>
   );
 }
