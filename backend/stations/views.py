@@ -218,9 +218,10 @@ class SubmitDataView(APIView):
         station.last_seen = now
         station.save(update_fields=["last_seen"])
 
+        local_time = timezone.localtime(current.opens_at).strftime("%H:%M")
         deliver_notification.delay(
-            title="📡 Data received",
-            body=f"Station {station.name} submitted for window {current.hour:02d}:00 UTC.",
+            title="📡 Данные получены",
+            body=f"Станция {station.name} ({station.station_id}) отправила данные в окне {local_time}.",
             level="info",
             data={"type": "data_received", "station_id": station.station_id},
         )
