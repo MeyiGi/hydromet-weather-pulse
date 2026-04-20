@@ -35,7 +35,10 @@ export function SubmitForm({
   const [value, setValue] = useState("");
   const [submitting, setSubmit] = useState(false);
   const [receivedAt, setReceivedAt] = useState<string | null>(null);
-  const complete = value.length === 24;
+  const groups = value.trim().split(/\s+/).filter(Boolean);
+  const complete =
+    groups.length >= 8 &&
+    groups.every((g) => /^\d{3}$/.test(g) || /^\d{5}$/.test(g));
 
   const submit = async () => {
     setSubmit(true);
@@ -104,7 +107,7 @@ export function SubmitForm({
         </div>
 
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="tabular-nums">{value.length} / 24</span>
+          <span className="tabular-nums">{groups.length} / 8+ {groups.length > 0 && !complete && groups.some(g => !/^\d{3}$/.test(g) && !/^\d{5}$/.test(g)) ? "· invalid group" : ""}</span>
           {!windowOpen && (
             <span className="text-amber-500">{t("windowClosed")}</span>
           )}

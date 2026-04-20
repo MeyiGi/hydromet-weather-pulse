@@ -8,7 +8,7 @@ import { useLang } from "@/lib/i18n";
 import type { Station } from "@/lib/types";
 
 export function StationCard({ station }: { station: Station }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
 
   return (
     <Link href={`/stations/${station.station_id}`} className="group block">
@@ -23,10 +23,24 @@ export function StationCard({ station }: { station: Station }) {
             </p>
           </div>
           <Badge
-            variant={station.is_overdue ? "destructive" : "secondary"}
-            className="shrink-0 rounded-full font-normal"
+            variant={
+              station.submission_status === "overdue"
+                ? "destructive"
+                : station.submission_status === "pending"
+                ? "outline"
+                : "secondary"
+            }
+            className={`shrink-0 rounded-full font-normal ${
+              station.submission_status === "pending"
+                ? "border-amber-400 text-amber-600 dark:border-amber-500 dark:text-amber-400"
+                : ""
+            }`}
           >
-            {station.is_overdue ? t("overdue") : t("onTime")}
+            {station.submission_status === "overdue"
+              ? t("overdue")
+              : station.submission_status === "pending"
+              ? t("pending")
+              : t("onTime")}
           </Badge>
         </CardHeader>
         <CardContent className="space-y-1.5 text-sm text-muted-foreground">
@@ -38,7 +52,7 @@ export function StationCard({ station }: { station: Station }) {
           )}
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5 shrink-0" />
-            {t("lastSeen")}: {relativeTime(station.last_seen)}
+            {t("lastSeen")}: {relativeTime(station.last_seen, lang)}
           </div>
         </CardContent>
       </Card>

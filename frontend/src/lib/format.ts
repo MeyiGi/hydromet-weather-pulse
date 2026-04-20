@@ -8,13 +8,38 @@ export const countdown = (s: number) => {
     : `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 };
 
-export const relativeTime = (iso: string | null) => {
-  if (!iso) return "never";
+const RT = {
+  en: {
+    never: "never",
+    justNow: "just now",
+    min: (n: number) => `${n}m ago`,
+    hour: (n: number) => `${n}h ago`,
+    day: (n: number) => `${n}d ago`,
+  },
+  ru: {
+    never: "никогда",
+    justNow: "только что",
+    min: (n: number) => `${n} мин. назад`,
+    hour: (n: number) => `${n} ч. назад`,
+    day: (n: number) => `${n} д. назад`,
+  },
+  kg: {
+    never: "эч качан",
+    justNow: "азыр эле",
+    min: (n: number) => `${n} мүн. мурун`,
+    hour: (n: number) => `${n} саат мурун`,
+    day: (n: number) => `${n} күн мурун`,
+  },
+} as const;
+
+export const relativeTime = (iso: string | null, lang: "en" | "ru" | "kg" = "en") => {
+  const L = RT[lang] ?? RT.en;
+  if (!iso) return L.never;
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
+  if (s < 60) return L.justNow;
+  if (s < 3600) return L.min(Math.floor(s / 60));
+  if (s < 86400) return L.hour(Math.floor(s / 3600));
+  return L.day(Math.floor(s / 86400));
 };
 
 export const utcHour = (h: number) => `${String(h).padStart(2, "0")}:00`;

@@ -34,7 +34,7 @@ export default function StationPage({
   const { id: stationId } = use(params);
   const { stations } = useStations();
   const { status } = useWindowStatus();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const station = stations?.find((s) => s.station_id === stationId);
 
   const [unlocked, setUnlocked] = useState(false);
@@ -108,10 +108,24 @@ export default function StationPage({
                   </p>
                 </div>
                 <Badge
-                  variant={station.is_overdue ? "destructive" : "secondary"}
-                  className="shrink-0 rounded-full font-normal"
+                  variant={
+                    station.submission_status === "overdue"
+                      ? "destructive"
+                      : station.submission_status === "pending"
+                      ? "outline"
+                      : "secondary"
+                  }
+                  className={`shrink-0 rounded-full font-normal ${
+                    station.submission_status === "pending"
+                      ? "border-amber-400 text-amber-600 dark:border-amber-500 dark:text-amber-400"
+                      : ""
+                  }`}
                 >
-                  {station.is_overdue ? t("overdue") : t("onTime")}
+                  {station.submission_status === "overdue"
+                    ? t("overdue")
+                    : station.submission_status === "pending"
+                    ? t("pending")
+                    : t("onTime")}
                 </Badge>
               </div>
             </CardHeader>
@@ -127,7 +141,7 @@ export default function StationPage({
               )}
               <div className="flex items-center gap-2 py-2">
                 <Clock className="h-3.5 w-3.5 shrink-0" />
-                {t("lastSeen")}: {relativeTime(station.last_seen)}
+                {t("lastSeen")}: {relativeTime(station.last_seen, lang)}
               </div>
             </CardContent>
           </Card>
@@ -138,7 +152,7 @@ export default function StationPage({
             lat={station.latitude}
             lng={station.longitude}
             name={station.name}
-            isOverdue={station.is_overdue}
+            submissionStatus={station.submission_status}
           />
         )}
 

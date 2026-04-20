@@ -16,7 +16,7 @@ function addMarkers(
   stations
     .filter((s) => s.latitude !== null && s.longitude !== null)
     .forEach((s) => {
-      const color = s.is_overdue ? "#ef4444" : "#22c55e";
+      const color = s.submission_status === "overdue" ? "#ef4444" : s.submission_status === "pending" ? "#f59e0b" : "#22c55e";
       const icon = L.divIcon({
         className: "",
         html: `<div style="width:12px;height:12px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>`,
@@ -29,7 +29,7 @@ function addMarkers(
         <div style="min-width:140px;cursor:pointer;padding:2px 0">
           <div style="font-weight:600;font-size:13px;margin-bottom:2px">${s.name}</div>
           <div style="font-size:11px;color:#6b7280;margin-bottom:6px">${s.location ?? s.station_id}</div>
-          <div style="font-size:11px;color:${color};margin-bottom:6px">${s.is_overdue ? "● Overdue" : "● On time"}</div>
+          <div style="font-size:11px;color:${color};margin-bottom:6px">${s.submission_status === "overdue" ? "● Overdue" : s.submission_status === "pending" ? "● Pending" : "● On time"}</div>
           <div style="font-size:11px;color:#3b82f6;font-weight:500">Open station →</div>
         </div>
       `);

@@ -1,21 +1,8 @@
 "use client";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-  InputOTPSeparator,
-} from "@/components/ui/input-otp";
-import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
 
-// 6 групп по 4 символа = 24 символа SYNOP кода
-// InputOTP даёт отдельную ячейку для каждого символа
-const slot = (i: number) => (
-  <InputOTPSlot
-    key={i}
-    index={i}
-    className="h-10 w-8 rounded-lg text-sm sm:h-12 sm:w-10"
-  />
-);
+function isValidGroup(g: string) {
+  return /^\d{3}$/.test(g) || /^\d{5}$/.test(g);
+}
 
 export function SynopInput({
   value,
@@ -26,23 +13,45 @@ export function SynopInput({
   onChange: (v: string) => void;
   disabled?: boolean;
 }) {
+  const groups = value.trim() ? value.trim().split(/\s+/) : [];
+
   return (
-    <InputOTP
-      maxLength={24}
-      pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
-      value={value.toUpperCase()}
-      onChange={(v) => onChange(v.toUpperCase())}
-      disabled={disabled}
-      containerClassName="flex-wrap justify-center gap-2"
-    >
-      {[0, 4, 8, 12, 16, 20].map((start, gi) => (
-        <span key={start} className="flex items-center gap-2">
-          {gi > 0 && <InputOTPSeparator />}
-          <InputOTPGroup>
-            {[0, 1, 2, 3].map((j) => slot(start + j))}
-          </InputOTPGroup>
-        </span>
-      ))}
-    </InputOTP>
+    <div className="w-full space-y-3">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) =>
+          onChange(e.target.value.replace(/[^\d\s]/g, "").replace(/\s{2,}/g, " "))
+        }
+        disabled={disabled}
+        placeholder="38476 22999 00801 10083 20000 38358 48610 52003 333 …"
+        spellCheck={false}
+        autoCorrect="off"
+        autoCapitalize="off"
+        className="w-full rounded-xl border border-input bg-background px-4 py-3 font-mono text-sm tracking-wider placeholder:text-muted-foreground/50 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+      />
+      {groups.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {groups.map((g, i) => {
+            const sep = g === "333" || g === "555";
+            const valid = isValidGroup(g);
+            return (
+              <span
+                key={i}
+                className={`rounded-md px-2 py-0.5 font-mono text-xs ${
+                  sep
+                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                    : valid
+                    ? "bg-muted text-foreground"
+                    : "bg-destructive/10 text-destructive"
+                }`}
+              >
+                {g}
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

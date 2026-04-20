@@ -5,10 +5,10 @@ interface Props {
   lat: number;
   lng: number;
   name: string;
-  isOverdue: boolean;
+  submissionStatus: "on_time" | "pending" | "overdue";
 }
 
-export function StationMiniMap({ lat, lng, name, isOverdue }: Props) {
+export function StationMiniMap({ lat, lng, name, submissionStatus }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
 
@@ -33,7 +33,7 @@ export function StationMiniMap({ lat, lng, name, isOverdue }: Props) {
       const icon = L.divIcon({
         className: "",
         html: `<div style="width:16px;height:16px;border-radius:50%;background:${
-          isOverdue ? "#ef4444" : "#22c55e"
+          submissionStatus === "overdue" ? "#ef4444" : submissionStatus === "pending" ? "#f59e0b" : "#22c55e"
         };border:3px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.5)"></div>`,
         iconSize: [16, 16],
         iconAnchor: [8, 8],
