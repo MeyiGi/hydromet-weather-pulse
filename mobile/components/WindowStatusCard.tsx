@@ -4,17 +4,15 @@ import { useWindowStatus } from "@/hooks/useWindowStatus";
 import { useLang } from "@/lib/i18n";
 import { countdown, kgHour } from "@/lib/format";
 
-const WINDOW_SECONDS = 20 * 60;
-
-const DISPLAY_HOURS = [0, 3, 6, 9, 12, 15, 18, 21];
-
 export function WindowStatusCard() {
   const { status } = useWindowStatus();
   const { t } = useLang();
   const scheme = useColorScheme();
   const dark = scheme === "dark";
 
-  const sortedHours = DISPLAY_HOURS.slice().sort((a, b) => (a + 6) % 24 - (b + 6) % 24);
+  const windows = status?.windows ?? [];
+  const durationSeconds = status?.window_duration_seconds ?? 1200;
+  const sortedHours = windows.slice().sort((a, b) => (a + 6) % 24 - (b + 6) % 24);
 
   return (
     <View className={`rounded-2xl p-4 shadow-sm ${dark ? "bg-gray-900" : "bg-white"}`}>
@@ -78,7 +76,7 @@ export function WindowStatusCard() {
             <View
               className={`h-full rounded-full ${dark ? "bg-white" : "bg-gray-900"}`}
               style={{
-                width: `${Math.round((status.current.seconds_left / WINDOW_SECONDS) * 100)}%`,
+                width: `${Math.round((status.current.seconds_left / durationSeconds) * 100)}%`,
               }}
             />
           </View>

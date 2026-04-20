@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
+  Keyboard,
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -32,6 +33,20 @@ export default function StationScreen() {
 
   const [unlocked, setUnlocked] = useState(false);
   const [loginVisible, setLoginVisible] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -43,7 +58,7 @@ export default function StationScreen() {
     return buildMapHtml(
       [{ id: station.station_id, name: station.name, location: station.location, lat: station.latitude, lng: station.longitude, overdue: station.is_overdue }],
       dark,
-      { interactive: false, zoom: 12, lat: station.latitude, lng: station.longitude },
+      { interactive: true, zoom: 12, lat: station.latitude, lng: station.longitude },
     );
   }, [station, dark]);
 
@@ -82,9 +97,12 @@ export default function StationScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         className="flex-1"
-        contentContainerClassName="px-4 py-4 gap-4 pb-8"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: keyboardHeight + 32, gap: 16 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={scrollEnabled}
       >
         {/* Station info card */}
         {!station ? (
@@ -177,13 +195,19 @@ export default function StationScreen() {
                 {t("location")}
               </Text>
             </View>
-            <WebView
-              style={{ height: 180 }}
-              source={{ html: miniMapHtml }}
-              originWhitelist={["*"]}
-              javaScriptEnabled
-              scrollEnabled={false}
-            />
+            <View
+              onTouchStart={() => setScrollEnabled(false)}
+              onTouchEnd={() => setScrollEnabled(true)}
+              onTouchCancel={() => setScrollEnabled(true)}
+            >
+              <WebView
+                style={{ height: 220 }}
+                source={{ html: miniMapHtml }}
+                originWhitelist={["*"]}
+                javaScriptEnabled
+                nestedScrollEnabled
+              />
+            </View>
           </View>
         )}
 

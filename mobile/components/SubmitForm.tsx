@@ -10,9 +10,10 @@ interface Props {
   windowOpen: boolean;
   onLock: () => void;
   onSubmitted?: () => void;
+  onInputFocus?: () => void;
 }
 
-export function SubmitForm({ stationId, windowOpen, onLock, onSubmitted }: Props) {
+export function SubmitForm({ stationId, windowOpen, onLock, onSubmitted, onInputFocus }: Props) {
   const { t } = useLang();
   const dark = useColorScheme() === "dark";
   const [value, setValue] = useState("");
@@ -76,7 +77,7 @@ export function SubmitForm({ stationId, windowOpen, onLock, onSubmitted }: Props
         {t("enterSynop")}
       </Text>
 
-      <SynopInput value={value} onChange={setValue} disabled={submitting || !windowOpen} />
+      <SynopInput value={value} onChange={setValue} disabled={submitting || !windowOpen} onFocus={onInputFocus} />
 
       <View className="mt-3 flex-row items-center justify-between">
         <Text className={`text-xs tabular-nums ${dark ? "text-gray-400" : "text-gray-500"}`}>

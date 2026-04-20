@@ -15,7 +15,7 @@ export function useWindowStatus() {
       }
     };
     load();
-    const interval = setInterval(load, 10_000);
+    const interval = setInterval(load, 5_000);
     return () => clearInterval(interval);
   }, []);
 
