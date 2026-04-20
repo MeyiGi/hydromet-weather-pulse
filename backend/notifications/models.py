@@ -30,10 +30,20 @@ class Notification(models.Model):
     body = models.TextField()
     level = models.CharField(max_length=10, choices=Level.choices, default=Level.INFO)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.level.upper()} - {self.title}"
+
+
+class NotificationRead(models.Model):
+    """Tracks which notifications have been read per device."""
+
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name="reads")
+    device_id = models.CharField(max_length=64, db_index=True)
+    read_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("notification", "device_id")]
