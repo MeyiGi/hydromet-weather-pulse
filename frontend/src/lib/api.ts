@@ -18,6 +18,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  station: (id: string) => req<Station>(`/api/stations/${id}/`),
   stations: (params?: { page?: number; page_size?: number; status?: string; search?: string }) => {
     const qs = new URLSearchParams();
     if (params?.page) qs.set("page", String(params.page));

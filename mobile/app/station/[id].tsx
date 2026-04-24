@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import WebView from "react-native-webview";
-import { useStations } from "@/hooks/useStations";
+import { useStation } from "@/hooks/useStation";
 import { useWindowStatus } from "@/hooks/useWindowStatus";
 import { buildMapHtml } from "@/lib/mapHtml";
 import { isUnlocked, lock } from "@/lib/auth";
@@ -27,9 +27,8 @@ export default function StationScreen() {
   const router = useRouter();
   const dark = useColorScheme() === "dark";
 
-  const { stations } = useStations();
+  const { station, notFound, error: stationError } = useStation(id ?? "");
   const { status } = useWindowStatus();
-  const station = stations?.find((s) => s.station_id === id);
 
   const [unlocked, setUnlocked] = useState(false);
   const [loginVisible, setLoginVisible] = useState(false);
@@ -67,6 +66,35 @@ export default function StationScreen() {
     status && !status.is_open && status.next ? status.next.opens_in_seconds : null;
 
   if (!id) return null;
+
+  if (notFound || stationError) {
+    return (
+      <SafeAreaView edges={["top"]} className={`flex-1 ${dark ? "bg-gray-950" : "bg-gray-50"}`}>
+        <View className={`flex-row items-center border-b px-4 py-2 ${dark ? "border-gray-800 bg-gray-950" : "border-gray-100 bg-white"}`}>
+          <TouchableOpacity onPress={() => router.back()} className="mr-3 -ml-1 p-1">
+            <Ionicons name="chevron-back" size={22} color={dark ? "#9CA3AF" : "#6B7280"} />
+          </TouchableOpacity>
+          <Text className={`text-base font-medium ${dark ? "text-white" : "text-gray-900"}`}>
+            {t("stations")}
+          </Text>
+        </View>
+        <View className="flex-1 items-center justify-center p-8">
+          <Ionicons name="alert-circle-outline" size={40} color={dark ? "#6B7280" : "#9CA3AF"} />
+          <Text className={`mt-3 text-center text-sm ${dark ? "text-gray-400" : "text-gray-500"}`}>
+            {notFound ? t("stationNotFound") : stationError}
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className={`mt-4 rounded-xl px-5 py-2.5 ${dark ? "bg-gray-800" : "bg-gray-100"}`}
+          >
+            <Text className={`text-sm ${dark ? "text-white" : "text-gray-900"}`}>
+              {t("backToStations")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView edges={["top"]} className={`flex-1 ${dark ? "bg-gray-950" : "bg-gray-50"}`}>

@@ -1,7 +1,7 @@
 "use client";
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { useStations } from "@/hooks/useStation";
+import { useStation } from "@/hooks/useStation";
 import { useWindowStatus } from "@/hooks/useWindowStatus";
 import { isUnlocked, lock } from "@/lib/auth";
 import { relativeTime, countdown } from "@/lib/format";
@@ -32,10 +32,9 @@ export default function StationPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: stationId } = use(params);
-  const { stations } = useStations();
+  const { station, notFound } = useStation(stationId);
   const { status } = useWindowStatus();
   const { t, lang } = useLang();
-  const station = stations?.find((s) => s.station_id === stationId);
 
   const [unlocked, setUnlocked] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -44,7 +43,7 @@ export default function StationPage({
     setUnlocked(isUnlocked(stationId));
   }, [stationId]);
 
-  if (stations && !station)
+  if (notFound)
     return (
       <div className="mx-auto max-w-xl p-8 text-center">
         <p className="mb-4 text-muted-foreground">{t("stationNotFound")}</p>

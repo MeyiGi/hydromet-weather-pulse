@@ -22,8 +22,8 @@ export interface WindowStatus {
   windows: number[];
   window_duration_seconds: number;
   window_close_offset_minutes: number;
-  current: { hour: number; closes_at: string; seconds_left: number };
-  next: { hour: number; opens_at: string; opens_in_seconds: number };
+  current: { hour: number; closes_at: string; seconds_left: number } | null;
+  next: { hour: number; opens_at: string; opens_in_seconds: number } | null;
 }
 
 export interface Notification {

@@ -30,7 +30,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["0.0.0.0", "127.0.0.1", "localhost", "192.168.242.5"]
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -137,19 +137,6 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, "firebase-credentials.json")
 
-# Celery configuration
-from celery import Celery
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-
-app = Celery('config')
-app.config_from_object('django.conf:settings', namespace='CELERY')
-
-app.autodiscover_tasks()
-@app.task(bind=True, ignore_result=True)
-def debug_task(self):
-    print(f'Request: {self.request!r}')
-
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 
@@ -174,4 +161,4 @@ NOTIFICATION_CLOSE_OFFSET_MIN = 30
 # actual data submission hours
 # NOTIFICATION_HOURS = [0, 3, 6, 9, 12, 15, 18, 21]
 # NOTIFICATION_OPEN_OFFSET_MIN = -4
-# NOTIFICATION_CLOSE_OFFSET_MIN = 19
+# NOTIFICATION_CLOSE_OFFSET_MIN = 19    
